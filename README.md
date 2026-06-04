@@ -183,18 +183,15 @@ streamlit run src/app.py
 
 ## 한계 및 Future Work
 
-**한계**:
-- 데이터 = 모의 시나리오 (ACI-Bench도 실 환자 아님). **임상 안전 보장 못 함.**
-- 한국어 = gpt-4o-mini 자동번역 → 노이즈 포함. 실 한국 임상 데이터로 검증 필요.
-- n=40는 통계적 유의성 한계. 신뢰구간 좁히려면 더 큰 평가셋 필요.
-- LLM-as-judge는 인간 의사 평가의 근사일 뿐.
+**한계 (Limitations)**:
+- **Cross-Border 도메인 격차**: 미국 ACI-Bench 기반이라 국내 보험수가 및 처방 트렌드 반영 불가 (단순 번역 노이즈 이상의 도메인 Gap 존재).
+- **Random 2-shot의 변동성(Variance)**: 임베딩/TF-IDF 리트리버 전멸로 Random을 채택했으나, 상용 환경에서 무작위 예시 매칭 시 출력 품질 변동성 통제 불가.
+- **메트릭 디커플링 및 Rubric 한계**: ROUGE의 사실성 측정 한계를 규명했음에도 아키텍처 선별에 ROUGE가 개입된 점, Format 평가에서 Judge 간 합의율 음수(-0.04)로 인한 채점 기준의 느슨함 확인 ($n=40$의 통계적 유의성 한계 포함).
 
 **Future Work**:
-- MTS-Dialog Task A (섹션 단위) 실험 추가
-- 의료 도메인 특화 retriever (BioBERT/MedCLIP embedding)
-- LoRA fine-tuning 비교
-- 실 한국 의료 대화 코퍼스 확보 (IRB 필요)
-- 인간 의사 평가 + LLM-judge 정합성 분석
+- 원자적(Atomic) 체크리스트 방식의 Judge Rubric 고도화 및 인간 의사 평가와의 정합성 분석.
+- MTS-Dialog 활용 및 오인식 노이즈를 주입한 한국어 의료 코퍼스 기반의 LoRA Fine-tuning 비교 실험.
+- 의료 도메인 특화 임베딩(BioBERT 등) 및 Whisper 에러 전파를 막기 위한 전처리 보정 레이어 설계.
 
 ---
 
