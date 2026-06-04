@@ -150,10 +150,11 @@ st.markdown(
     "한국어 확장 + ROUGE 한계·self-bias 검증"
 )
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "🎯 단일 케이스 데모",
     "📊 결과 대시보드 (9개 발견)",
     "🔍 환각 사례 갤러리",
+    "🎙️ 실시간 녹음 (Whisper)",
 ])
 
 
@@ -382,3 +383,153 @@ with tab3:
                 st.markdown("**Prediction (환각 포함)**")
                 st.text_area("pred", r["prediction"], height=300,
                              label_visibility="collapsed", key=f"pred_{r['id']}")
+
+
+# =========================================================
+# TAB 4 — Live recording (Whisper → ICL → SOAP)
+# =========================================================
+with tab4:
+    st.header("실시간 음성 → SOAP 노트 생성")
+    st.caption("🎙️ 마이크로 의사-환자 대화를 말하면 Whisper가 텍스트화하고 ICL이 SOAP 노트를 생성")
+
+    # 컨트롤
+    lc1, lc2, lc3 = st.columns([1, 1, 2])
+    with lc1:
+        rec_lang = st.radio("언어", ["KO (한국어)", "EN (English)"],
+                            horizontal=False, key="rec_lang")
+    with lc2:
+        whisper_model = st.selectbox(
+            "Whisper 모델",
+            ["whisper-1", "gpt-4o-mini-transcribe", "gpt-4o-transcribe"],
+            help="whisper-1 = 저렴·표준 / gpt-4o-transcribe = 더 정확·고가",
+        )
+    with lc3:
+        st.markdown("💡 **시연 팁**")
+        if rec_lang.startswith("KO"):
+            st.markdown(
+                "> _예시 멘트:_ \"환자분, 59세 남성이고 고혈압 과거력 있으세요. "
+                "며칠 전부터 가슴이 답답하고 숨이 차다고 하셨고, 운동할 때 더 심해진다고 하셨죠.\""
+            )
+        else:
+            st.markdown(
+                "> _Example:_ \"Patient is a 59-year-old male with history of hypertension. "
+                "He reports chest tightness and shortness of breath for several days, worse on exertion.\""
+            )
+
+    lang_code = "ko" if rec_lang.startswith("KO") else "en"
+
+    st.divider()
+
+    # 입력 방법 선택: 마이크 or 파일 업로드
+    input_method = st.radio(
+        "입력 방법", ["🎙️ 마이크 녹음", "📁 오디오 파일 업로드"],
+        horizontal=True, key="input_method",
+    )
+
+    audio_data = None
+    if input_method.startswith("🎙️"):
+        audio = st.audio_input("녹음 시작 → 정지", key="mic")
+        if audio:
+            audio_data = audio
+    else:
+        up = st.file_uploader(
+            "오디오 파일 (mp3/wav/m4a/webm)",
+            type=["mp3", "wav", "m4a", "webm", "ogg", "flac"],
+            key="upload",
+        )
+        if up:
+            audio_data = up
+
+    # 생성 버튼
+    if audio_data:
+        if st.button("🔄 Transcribe & Generate SOAP", type="primary"):
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(ROOT / ".env")
+            except ImportError:
+                pass
+            import os as _os
+            if not _os.getenv("OPENAI_API_KEY"):
+                st.error("OPENAI_API_KEY가 .env에 없음")
+                st.stop()
+
+            from openai import OpenAI
+            client = OpenAI()
+
+            # 1. Transcribe
+            with st.spinner(f"🎤 Whisper 전사 중 ({lang_code})..."):
+                try:
+                    audio_data.seek(0)
+                    transcript = client.audio.transcriptions.create(
+                        model=whisper_model,
+                        file=("audio.wav", audio_data, "audio/wav"),
+                        language=lang_code,
+                    ).text
+                except Exception as e:
+                    st.error(f"전사 실패: {e}")
+                    st.stop()
+
+            # 2. ICL: dialogue → SOAP
+            SYS_KO = ("당신은 전문 임상 AI 어시스턴트입니다. "
+                      "의사와 환자 간의 대화를 바탕으로 한국 의무기록 형식의 임상 노트를 작성하세요. "
+                      "다음 항목을 포함하여 작성하십시오: "
+                      "주호소, 현병력, 신체검사, 검사결과, 평가 및 계획. "
+                      "간결한 의무기록 서술체(~함/~임/~없음/~있음)를 사용하고 주어는 생략하십시오.")
+            SYS_EN = ("You are an expert clinical AI assistant. Based on the following conversation "
+                      "between a doctor and a patient, generate a structured clinical note including "
+                      "CHIEF COMPLAINT, HISTORY OF PRESENT ILLNESS, PHYSICAL EXAMINATION, "
+                      "RESULTS, ASSESSMENT AND PLAN.")
+            sys_msg = SYS_KO if lang_code == "ko" else SYS_EN
+
+            # few-shot: train pool에서 2개 랜덤
+            import random as _rnd
+            train_path = DATA / ("aci_train_ko.jsonl" if lang_code == "ko" else "aci_train.jsonl")
+            pool = load_jsonl(train_path)
+            few = _rnd.sample(pool, 2) if len(pool) >= 2 else pool
+
+            msgs = [{"role": "system", "content": sys_msg}]
+            for ex in few:
+                msgs.append(ex["messages"][1])
+                msgs.append(ex["messages"][2])
+            user_q = f"Conversation:\n{transcript}\n\nGenerate Clinical Note:"
+            msgs.append({"role": "user", "content": user_q})
+
+            with st.spinner("📝 SOAP 노트 생성 중 (gpt-4o-mini, 2-shot)..."):
+                try:
+                    resp = client.chat.completions.create(
+                        model="gpt-4o-mini", messages=msgs,
+                        temperature=0.2, max_tokens=2048,
+                    )
+                    note = resp.choices[0].message.content
+                except Exception as e:
+                    st.error(f"노트 생성 실패: {e}")
+                    st.stop()
+
+            # 표시
+            st.divider()
+            col_t, col_n = st.columns(2)
+            with col_t:
+                st.subheader("📝 Transcript")
+                st.text_area(" ", transcript, height=350,
+                             label_visibility="collapsed", key="transcript_out")
+            with col_n:
+                st.subheader("🩺 Generated SOAP Note")
+                st.text_area(" ", note, height=350,
+                             label_visibility="collapsed", key="note_out")
+
+            st.success(
+                f"완료! Few-shot 예시 ID: "
+                f"{[e.get('meta',{}).get('encounter_id','?') for e in few]}"
+            )
+
+    st.divider()
+    with st.expander("⚠️ 한계 (정직)"):
+        st.markdown("""
+- **ICL pool은 자동번역 한국어**: ACI-Bench 미국 모의 대화를 gpt-4o-mini로 한국어 번역한 67건.
+  실 한국 의무기록 스타일과는 차이 있음 (환자명·약물명 영문 그대로 등).
+- **Whisper 의료 용어**: whisper-1은 일반 한국어는 매우 정확하나 드문 의료 용어는 가끔 오인식.
+  gpt-4o-transcribe로 바꾸면 개선됨 (단, 더 비쌈).
+- **짧은 녹음의 환각**: 나이·성별·기왕력 등 명시 안 하면 모델이 환각으로 채울 위험.
+  데모용으론 충분하지만 임상 적용은 별도 검증 필요.
+- **임상 안전 보장 없음**: 학습·연구·데모 목적. 실 환자에게 사용 금지.
+""")
