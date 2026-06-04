@@ -1,4 +1,4 @@
-# ko-medscribe-llm
+# Ambient Clinical Documentation LLM
 
 **Ambient Clinical Documentation LLM** — MEDIQA-Chat 2023 (ACI-Bench Task B) 재현 + 한국어 확장 + ROUGE 한계·LLM-judge self-bias 검증.
 
