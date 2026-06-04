@@ -420,25 +420,37 @@ with tab4:
 
     st.divider()
 
-    # 입력 방법 선택: 마이크 or 파일 업로드
-    input_method = st.radio(
-        "입력 방법", ["🎙️ 마이크 녹음", "📁 오디오 파일 업로드"],
-        horizontal=True, key="input_method",
-    )
+    # 두 개의 컬럼으로 분할 (좌측: 입력 인터페이스, 우측: 리스크 고지 경고창)
+    input_col, warn_col = st.columns([1.2, 1.8])
 
-    audio_data = None
-    if input_method.startswith("🎙️"):
-        audio = st.audio_input("녹음 시작 → 정지", key="mic")
-        if audio:
-            audio_data = audio
-    else:
-        up = st.file_uploader(
-            "오디오 파일 (mp3/wav/m4a/webm)",
-            type=["mp3", "wav", "m4a", "webm", "ogg", "flac"],
-            key="upload",
+    with input_col:
+        input_method = st.radio(
+            "입력 방법", ["🎙️ 마이크 녹음", "📁 오디오 파일 업로드"],
+            horizontal=True, key="input_method",
         )
-        if up:
-            audio_data = up
+
+        audio_data = None
+        if input_method.startswith("🎙️"):
+            audio = st.audio_input("녹음 시작 → 정지", key="mic")
+            if audio:
+                audio_data = audio
+        else:
+            up = st.file_uploader(
+                "오디오 파일 (mp3/wav/m4a/webm)",
+                type=["mp3", "wav", "m4a", "webm", "ogg", "flac"],
+                key="upload",
+            )
+            if up:
+                audio_data = up
+
+    with warn_col:
+        # 🛑 상시 노출하는 '선제 방어막' (리스크 고지)
+        st.warning("""
+⚠️ **엔지니어링 리스크 고지 (Pipeline Limitation)**
+* **에러 전파 (Error Propagation) 위험:** 음성 인식(ASR) 단계에서 발생하는 고유명사(약물명, 검사명 등) 누락이나 사투리/발음 노이즈는 뒷단의 Few-shot 셀렉터를 교란하고, `gpt-4o-mini`가 환각(오진)을 일으킬 구조적 취약점이 존재합니다.
+* **현재의 대응:** 사용자가 생성 버튼을 누르기 전 텍스트를 직접 검토하고 수정할 수 있는 **'중간 편집 UI (Human-in-the-loop)'**를 제공하여 1차적으로 리스크를 통제하고 있습니다.
+* **향후 로드맵:** Whisper 출력단 직후에 '의학 사전 기반 동적 보정(Spell Checker) 레이어' 배치 및 노이즈가 주입된 대용량 의료 코퍼스 기반의 'LoRA 미세조정(Fine-tuning)' 모델로의 전환을 통해 근본적으로 개선할 예정입니다.
+""")
 
     # Initialize session state keys if not present
     if "transcript" not in st.session_state:
@@ -487,14 +499,6 @@ with tab4:
             height=250,
             key="edited_transcript_area"
         )
-
-        # 🛑 생성 버튼 직전에 '선제 방어막' 배치
-        st.warning("""
-⚠️ **엔지니어링 리스크 고지 (Pipeline Limitation)**
-* **에러 전파 (Error Propagation) 위험:** 음성 인식(ASR) 단계에서 발생하는 고유명사(약물명, 검사명 등) 누락이나 사투리/발음 노이즈는 뒷단의 Few-shot 셀렉터를 교란하고, `gpt-4o-mini`가 환각(오진)을 일으킬 구조적 취약점이 존재합니다.
-* **현재의 대응:** 사용자가 생성 버튼을 누르기 전 텍스트를 직접 검토하고 수정할 수 있는 **'중간 편집 UI (Human-in-the-loop)'**를 제공하여 1차적으로 리스크를 통제하고 있습니다.
-* **향후 로드맵:** Whisper 출력단 직후에 '의학 사전 기반 동적 보정(Spell Checker) 레이어' 배치 및 노이즈가 주입된 대용량 의료 코퍼스 기반의 'LoRA 미세조정(Fine-tuning)' 모델로의 전환을 통해 근본적으로 개선할 예정입니다.
-""")
 
         if st.button("🩺 2단계: SOAP 진료 기록 생성", type="primary"):
             try:
@@ -558,13 +562,9 @@ with tab4:
                      label_visibility="collapsed", key="note_out")
 
     st.divider()
-    with st.expander("⚠️ 한계 (정직)"):
+    with st.expander("⚠️ 한계 (Limitations)"):
         st.markdown("""
-- **ICL pool은 자동번역 한국어**: ACI-Bench 미국 모의 대화를 gpt-4o-mini로 한국어 번역한 67건.
-  실 한국 의무기록 스타일과는 차이 있음 (환자명·약물명 영문 그대로 등).
-- **Whisper 의료 용어**: whisper-1은 일반 한국어는 매우 정확하나 드문 의료 용어는 가끔 오인식.
-  gpt-4o-transcribe로 바꾸면 개선됨 (단, 더 비쌈).
-- **짧은 녹음의 환각**: 나이·성별·기왕력 등 명시 안 하면 모델이 환각으로 채울 위험.
-  데모용으론 충분하지만 임상 적용은 별도 검증 필요.
-- **임상 안전 보장 없음**: 학습·연구·데모 목적. 실 환자에게 사용 금지.
+- **Cross-Border 도메인 격차**: 미국 ACI-Bench 기반 데이터셋이라 한국 의료 환경 특유의 보험 수가 체계, 의약품 처방 트렌드, 진료 차팅 관습을 반영하기 어렵습니다. 단순한 번역체 노이즈 문제를 넘어 본질적인 국가 간 의료 도메인의 차이(Gap)가 존재합니다.
+- **Random 2-shot의 변동성(Variance)**: 한국어 환경에서 정교한 임베딩이나 TF-IDF 리트리버 기반 매칭이 모두 실패하여 대안으로 무작위(Random) 선택 방식을 채택했습니다. 그러나 이 방식은 상용화된 서비스 환경에서 사용자가 매번 생성 요청을 보낼 때마다 출력의 품질과 스타일 변동성을 통제하기 어렵다는 근본적 한계를 지닙니다.
+- **메트릭 디커플링 및 Rubric 한계**: ROUGE 점수가 의학적 사실성(Factuality) 평가 지표와 상충하고 디커플링됨을 증명했음에도, 퓨샷 아키텍처의 필터링 및 선별 과정에 ROUGE 메트릭이 개입되어 있습니다. 또한 포맷 평가(Format)에서 채점 AI 판사들 간의 합의율이 음수(-0.04)를 기록하는 등, 일부 항목에서 평가 기준의 느슨함이 확인되었으며, 평가 데이터 수($n=40$)의 통계적 유의성 문제도 남아있습니다.
 """)
