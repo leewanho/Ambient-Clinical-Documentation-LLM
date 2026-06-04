@@ -237,7 +237,7 @@ with tab1:
                 "Format": s.get("format", "-") if s else "-",
                 "Rationale (앞 100자)": (s.get("rationale", "") if s else "")[:100],
             })
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
 
 
 # =========================================================
@@ -249,7 +249,7 @@ with tab2:
 
     st.subheader("1. Retriever × Language 종합")
     df = compute_metrics_table()
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
 
     st.subheader("2. ROUGE는 사실성을 못 잡는다 (발견 #2)")
     st.markdown("Pearson(ROUGE-1, Factuality) ≈ 0.25 — 표면 메트릭과 사실성은 약한 상관")
@@ -276,7 +276,7 @@ with tab2:
                          hover_data=["encounter_id"],
                          title=f"Pearson r = {r:.3f}")
         fig.update_traces(marker=dict(size=10, opacity=0.7))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.subheader("3. Retriever 비교 — KO에서 Random이 최강 (발견 #4-6)")
     sub_df = df.dropna(subset=["Factuality"])
@@ -285,24 +285,24 @@ with tab2:
                  title="Factuality by Retriever × Language")
     fig.update_traces(textposition="outside")
     fig.update_yaxes(range=[0, 5])
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     fig2 = px.bar(sub_df, x="Retriever", y="ROUGE-1", color="Language",
                   barmode="group", text="ROUGE-1",
                   title="ROUGE-1 by Retriever × Language")
     fig2.update_traces(textposition="outside")
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
 
     st.subheader("4. 3-Vendor Judge — self-bias 정량 (발견 #7-9)")
     cc1, cc2 = st.columns(2)
     with cc1:
         st.markdown("**EN baseline test1**")
         en_jdf, n_en = judge_comparison_table("EN")
-        st.dataframe(en_jdf, hide_index=True, use_container_width=True)
+        st.dataframe(en_jdf, hide_index=True, width="stretch")
         st.caption(f"n={n_en}")
     with cc2:
         st.markdown("**KO baseline test1_ko**")
         ko_jdf, n_ko = judge_comparison_table("KO")
-        st.dataframe(ko_jdf, hide_index=True, use_container_width=True)
+        st.dataframe(ko_jdf, hide_index=True, width="stretch")
         st.caption(f"n={n_ko}")
 
     melt = pd.melt(
@@ -316,7 +316,7 @@ with tab2:
                   title="3-Vendor Judge 비교 — Format은 합의 없음 (발견 #8)")
     fig3.update_traces(textposition="outside")
     fig3.update_yaxes(range=[0, 5])
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")
 
     st.subheader("5. 9개 발견 요약")
     st.markdown("""
@@ -440,9 +440,15 @@ with tab4:
         if up:
             audio_data = up
 
+    # Initialize session state keys if not present
+    if "transcript" not in st.session_state:
+        st.session_state.transcript = ""
+    if "generated_note" not in st.session_state:
+        st.session_state.generated_note = ""
+
     # 생성 버튼
     if audio_data:
-        if st.button("🔄 Transcribe & Generate SOAP", type="primary"):
+        if st.button("🎙️ 1단계: 음성 전사 실행 (Transcribe Audio)", type="secondary"):
             try:
                 from dotenv import load_dotenv
                 load_dotenv(ROOT / ".env")
@@ -460,14 +466,49 @@ with tab4:
             with st.spinner(f"🎤 Whisper 전사 중 ({lang_code})..."):
                 try:
                     audio_data.seek(0)
-                    transcript = client.audio.transcriptions.create(
+                    st.session_state.transcript = client.audio.transcriptions.create(
                         model=whisper_model,
                         file=("audio.wav", audio_data, "audio/wav"),
                         language=lang_code,
                     ).text
+                    st.session_state.generated_note = ""  # 새로운 전사 시 이전 노트 초기화
                 except Exception as e:
                     st.error(f"전사 실패: {e}")
                     st.stop()
+
+    if st.session_state.transcript:
+        st.divider()
+        st.subheader("📝 1단계: Whisper 변환 결과 (편집 가능)")
+        
+        # 변환된 텍스트를 의사가 직접 수정할 수 있는 text_area 제공
+        edited_text = st.text_area(
+            "인식된 대화 내용입니다. 오타나 의학 용어 오류가 있다면 수정 후 아래 생성 버튼을 누르세요.",
+            value=st.session_state.transcript,
+            height=250,
+            key="edited_transcript_area"
+        )
+
+        # 🛑 생성 버튼 직전에 '선제 방어막' 배치
+        st.warning("""
+⚠️ **엔지니어링 리스크 고지 (Pipeline Limitation)**
+* **에러 전파 (Error Propagation) 위험:** 음성 인식(ASR) 단계에서 발생하는 고유명사(약물명, 검사명 등) 누락이나 사투리/발음 노이즈는 뒷단의 Few-shot 셀렉터를 교란하고, `gpt-4o-mini`가 환각(오진)을 일으킬 구조적 취약점이 존재합니다.
+* **현재의 대응:** 사용자가 생성 버튼을 누르기 전 텍스트를 직접 검토하고 수정할 수 있는 **'중간 편집 UI (Human-in-the-loop)'**를 제공하여 1차적으로 리스크를 통제하고 있습니다.
+* **향후 로드맵:** Whisper 출력단 직후에 '의학 사전 기반 동적 보정(Spell Checker) 레이어' 배치 및 노이즈가 주입된 대용량 의료 코퍼스 기반의 'LoRA 미세조정(Fine-tuning)' 모델로의 전환을 통해 근본적으로 개선할 예정입니다.
+""")
+
+        if st.button("🩺 2단계: SOAP 진료 기록 생성", type="primary"):
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(ROOT / ".env")
+            except ImportError:
+                pass
+            import os as _os
+            if not _os.getenv("OPENAI_API_KEY"):
+                st.error("OPENAI_API_KEY가 .env에 없음")
+                st.stop()
+
+            from openai import OpenAI
+            client = OpenAI()
 
             # 2. ICL: dialogue → SOAP
             SYS_KO = ("당신은 전문 임상 AI 어시스턴트입니다. "
@@ -491,7 +532,7 @@ with tab4:
             for ex in few:
                 msgs.append(ex["messages"][1])
                 msgs.append(ex["messages"][2])
-            user_q = f"Conversation:\n{transcript}\n\nGenerate Clinical Note:"
+            user_q = f"Conversation:\n{edited_text}\n\nGenerate Clinical Note:"
             msgs.append({"role": "user", "content": user_q})
 
             with st.spinner("📝 SOAP 노트 생성 중 (gpt-4o-mini, 2-shot)..."):
@@ -500,27 +541,21 @@ with tab4:
                         model="gpt-4o-mini", messages=msgs,
                         temperature=0.2, max_tokens=2048,
                     )
-                    note = resp.choices[0].message.content
+                    st.session_state.generated_note = resp.choices[0].message.content
                 except Exception as e:
                     st.error(f"노트 생성 실패: {e}")
                     st.stop()
-
-            # 표시
-            st.divider()
-            col_t, col_n = st.columns(2)
-            with col_t:
-                st.subheader("📝 Transcript")
-                st.text_area(" ", transcript, height=350,
-                             label_visibility="collapsed", key="transcript_out")
-            with col_n:
-                st.subheader("🩺 Generated SOAP Note")
-                st.text_area(" ", note, height=350,
-                             label_visibility="collapsed", key="note_out")
 
             st.success(
                 f"완료! Few-shot 예시 ID: "
                 f"{[e.get('meta',{}).get('encounter_id','?') for e in few]}"
             )
+
+    if st.session_state.generated_note:
+        st.divider()
+        st.subheader("🩺 Generated SOAP Note")
+        st.text_area(" ", st.session_state.generated_note, height=350,
+                     label_visibility="collapsed", key="note_out")
 
     st.divider()
     with st.expander("⚠️ 한계 (정직)"):
