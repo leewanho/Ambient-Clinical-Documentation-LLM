@@ -1,0 +1,29 @@
+# core
+pandas
+numpy
+jupyter
+
+# llm api
+openai>=1.0
+anthropic
+google-genai
+python-dotenv
+
+# evaluation
+rouge-score
+scikit-learn
+
+# retrieval (Korean morphological tokenizer + embeddings)
+kiwipiepy
+
+# demo
+streamlit
+
+# optional (later: fine-tuning / local inference)
+# transformers
+# torch
+# bert-score
+
+# optional (langchain — keep if you decide to use it later)
+# langchain
+# langchain-core
