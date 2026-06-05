@@ -332,7 +332,7 @@ st.markdown(
         align-items: center;
         justify-content: space-between;
         background: white;
-        padding: 2.2rem 1.5rem;
+        padding: 3rem 2rem;
         border-radius: 16px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
         border: 1px solid #e2e8f0;
@@ -347,25 +347,25 @@ st.markdown(
     }
 
     .step-icon {
-        font-size: 2.8rem;
-        margin-bottom: 0.5rem;
+        font-size: 3.8rem;
+        margin-bottom: 0.6rem;
     }
 
     .step-name {
         font-weight: 700;
         color: #0f172a;
-        font-size: 1.1rem;
-        margin-bottom: 0.3rem;
+        font-size: 1.35rem;
+        margin-bottom: 0.4rem;
     }
 
     .step-desc {
-        font-size: 0.88rem;
-        color: #475569;
-        line-height: 1.5;
+        font-size: 1.05rem;
+        color: #1e293b;
+        line-height: 1.6;
     }
 
     .pipeline-arrow {
-        font-size: 1.8rem;
+        font-size: 2.4rem;
         color: #cbd5e1;
         padding: 0 0.5rem;
         font-weight: bold;
