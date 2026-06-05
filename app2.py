@@ -242,19 +242,401 @@ def generate_soap_from_dialogue(dialogue: str, lang: str, model: str = "gpt-4o-m
 st.markdown(
     """
     <style>
-    .big-num {font-size: 3rem; font-weight: 700; color: #0066cc;}
-    .stat-label {font-size: 0.9rem; color: #666;}
-    .hero-card {background: #f7f9fc; padding: 1.5rem; border-radius: 10px;
-                border-left: 4px solid #0066cc; margin-bottom: 1rem;}
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+    /* Global Font Override */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+    }
+
+    /* Header styling */
+    .main-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        padding: 2.5rem;
+        border-radius: 16px;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .main-header h1 {
+        font-weight: 800;
+        letter-spacing: -1px;
+        background: linear-gradient(to right, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        font-size: 2.8rem;
+    }
+
+    /* Metric Cards */
+    .hero-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 1rem;
+        height: 100%;
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, #3b82f6, #6366f1);
+    }
+
+    .hero-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.08), 0 6px 8px -6px rgba(0, 0, 0, 0.08);
+        border-color: #cbd5e1;
+    }
+
+    .card-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #4f46e5;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    .big-num {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1.1;
+        margin-bottom: 0.6rem;
+        background: linear-gradient(135deg, #1e293b 30%, #475569 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    /* Technical Pipeline Flowchart */
+    .pipeline-flow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: white;
+        padding: 1.2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .pipeline-step {
+        flex: 1;
+        text-align: center;
+        padding: 0.25rem;
+    }
+
+    .step-icon {
+        font-size: 1.8rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .step-name {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.88rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .step-desc {
+        font-size: 0.75rem;
+        color: #64748b;
+        line-height: 1.4;
+    }
+
+    .pipeline-arrow {
+        font-size: 1.2rem;
+        color: #cbd5e1;
+        padding: 0 0.5rem;
+        font-weight: bold;
+    }
+
+    /* CTA Card (SaaS Launch Style) */
+    .cta-card {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        padding: 1.8rem;
+        border-radius: 16px;
+        border: 1px solid #a5b4fc;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.05);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cta-card:hover {
+        box-shadow: 0 12px 20px -3px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cta-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: #4f46e5;
+        color: white;
+        font-size: 0.68rem;
+        font-weight: 800;
+        padding: 0.2rem 0.6rem;
+        border-radius: 9999px;
+        letter-spacing: 0.5px;
+    }
+
+    .cta-card h3 {
+        color: #312e81;
+        font-weight: 800;
+        margin-top: 0;
+        margin-bottom: 0.6rem;
+        font-size: 1.2rem;
+    }
+
+    .cta-card p {
+        color: #3730a3;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* Tech Stack Tag Grid */
+    .tech-stack-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .tech-category {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .category-name {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .tag-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .tech-tag {
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #0f172a;
+        background: #f1f5f9;
+        padding: 0.25rem 0.65rem;
+        border-radius: 9999px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+    .tech-tag:hover {
+        background: #e2e8f0;
+        transform: translateY(-1px);
+    }
+
+    /* Findings 3x3 Grid */
+    .findings-grid-3x3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 1024px) {
+        .findings-grid-3x3 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .findings-grid-3x3 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .finding-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.2rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .finding-card:hover {
+        box-shadow: 0 10px 18px rgba(0,0,0,0.06);
+        border-color: #cbd5e1;
+        transform: translateY(-4px);
+    }
+
+    .finding-card-top {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .finding-num {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.55rem;
+        border-radius: 6px;
+        min-width: 32px;
+        text-align: center;
+    }
+
+    .finding-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.92rem;
+        line-height: 1.3;
+        flex: 1;
+    }
+
+    .finding-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 9999px;
+        white-space: nowrap;
+        align-self: flex-start;
+    }
+
+    .badge-hit {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-discard {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .finding-detail {
+        font-size: 0.82rem;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    /* Table Styling */
+    div[data-testid="stMarkdownContainer"] table {
+        width: 100%;
+        border-collapse: collapse;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+        margin-top: 1rem;
+    }
+
+    div[data-testid="stMarkdownContainer"] th {
+        background-color: #f8fafc;
+        color: #1e293b;
+        font-weight: 600;
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.9rem;
+    }
+
+    div[data-testid="stMarkdownContainer"] td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        background-color: white;
+        font-size: 0.9rem;
+    }
+
+    div[data-testid="stMarkdownContainer"] tr:last-child td {
+        border-bottom: none;
+    }
+
+    div[data-testid="stMarkdownContainer"] tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    /* Tabs UI */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #f1f5f9;
+        padding: 6px;
+        border-radius: 12px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 42px;
+        background-color: transparent;
+        border-radius: 8px;
+        color: #64748b;
+        font-size: 0.92rem;
+        font-weight: 600;
+        border: none;
+        transition: all 0.2s ease;
+        padding: 0 20px;
+    }
+
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: rgba(255, 255, 255, 0.6);
+        color: #0f172a;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: white !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        color: #0f172a !important;
+        font-weight: 700 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("📋 ko-medscribe-llm")
-st.caption(
-    "Ambient Clinical Documentation LLM — MEDIQA-Chat 2023 (ACI-Bench Task B) 재현 + "
-    "한국어 확장 + ROUGE/LLM-judge 한계 검증"
+st.markdown(
+    """
+    <div class="main-header">
+        <h1>📋 Ambient Clinical Documentation LLM</h1>
+        <p style="margin-top:0.8rem; font-size:1.4rem; opacity:0.85; line-height:1.5; font-weight: 400;">
+            MEDIQA-Chat 2023 (ACI-Bench Task B) 재현 · 한국어 확장<br>
+            ROUGE / LLM-judge 한계 검증 · 9개 가설 정량 테스트
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 tab0, tab1, tab2, tab3, tab4 = st.tabs([
@@ -270,94 +652,208 @@ tab0, tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 0 — Hero / Landing
 # =========================================================
 with tab0:
+    st.markdown("## 프로젝트 한 눈에")
+    st.caption("풀스택 임상 노트 파이프라인 구축 + 9개 가설 정량 검증.")
+
+    # 상단 2열 배치 (40% : 60%)
+    col_left, col_right = st.columns([1.6, 2.4])
+
+    with col_left:
+        # CTA (Launch Style) 카드
+        st.markdown(
+            """
+            <div class="cta-card">
+                <div class="cta-badge">LIVE DEMO</div>
+                <h3>🎙️ 지금 직접 시연해보세요</h3>
+                <p>상단 <b>🎙️ 실시간 시연</b> 탭에서 대화 음성 녹음 또는 자유 텍스트 입력으로 즉시 SOAP 임상 노트를 생성하고 성능을 체험해 보세요.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.info("💡 마이크가 없으신 경우 텍스트 입력 모드를 활용해 테스트하실 수 있습니다.")
+
+        # 사용 기술 배지 그리드
+        st.markdown(
+            """
+            <div class="tech-stack-grid">
+                <div class="tech-category">
+                    <div class="category-name">🤖 LLM & Generation</div>
+                    <div class="tag-group">
+                        <span class="tech-tag">gpt-4o-mini (생성)</span>
+                        <span class="tech-tag">gpt-4o (평가)</span>
+                        <span class="tech-tag">Claude 4.5 (평가)</span>
+                        <span class="tech-tag">Gemini 2.5 (평가)</span>
+                    </div>
+                </div>
+                <div class="tech-category" style="margin-top: 0.5rem;">
+                    <div class="category-name">🔍 Retrieval Engine</div>
+                    <div class="tag-group">
+                        <span class="tech-tag">TF-IDF (sklearn)</span>
+                        <span class="tech-tag">kiwipiepy (형태소)</span>
+                        <span class="tech-tag">text-embedding-3</span>
+                    </div>
+                </div>
+                <div class="tech-category" style="margin-top: 0.5rem;">
+                    <div class="category-name">⚖️ Evaluation & ASR</div>
+                    <div class="tag-group">
+                        <span class="tech-tag">Whisper ASR (음성)</span>
+                        <span class="tech-tag">ROUGE-1/L</span>
+                        <span class="tech-tag">Pearson 상관계수</span>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_right:
+        # 핵심 카드 3개 (가로 정렬)
+        k1, k2, k3 = st.columns(3)
+        with k1:
+            st.markdown(
+                '<div class="hero-card">'
+                '<div class="card-title">[ 빌드 규모 ]</div>'
+                '<div class="big-num">7×3×2</div>'
+                '<div class="stat-label">7 retriever × 3 vendor judge × 2 lang(EN/KO) 전수 평가 파이프라인 구축 및 데모 구현</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        with k2:
+            st.markdown(
+                '<div class="hero-card">'
+                '<div class="card-title">[ 메트릭 패러독스 ]</div>'
+                '<div class="big-num">0.254</div>'
+                '<div class="stat-label">Pearson(ROUGE-1, Factuality) — ROUGE는 사실성 평가 불가. 영 22%·한 30% 케이스에서 괴리 관측</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        with k3:
+            st.markdown(
+                '<div class="hero-card">'
+                '<div class="card-title">[ 평가자 패러독스 ]</div>'
+                '<div class="big-num">0.78점</div>'
+                '<div class="stat-label">gpt-4o vs Gemini judge 격차 — 단일 judge 신뢰 불가. 교차 평가를 통한 self-bias 편향 입증</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+        # 시스템 파이프라인 가로 다이어그램
+        st.markdown(
+            """
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    <div class="step-icon">🎙️</div>
+                    <div class="step-name">1. ASR 전사</div>
+                    <div class="step-desc">Whisper API 기반<br>의사 대화 음성 전사</div>
+                </div>
+                <div class="pipeline-arrow">➔</div>
+                <div class="pipeline-step">
+                    <div class="step-icon">🔍</div>
+                    <div class="step-name">2. Few-shot 검색</div>
+                    <div class="step-desc">유사도 검색 기반<br>최적의 진료 예시 선별</div>
+                </div>
+                <div class="pipeline-arrow">➔</div>
+                <div class="pipeline-step">
+                    <div class="step-icon">🤖</div>
+                    <div class="step-name">3. SOAP 생성</div>
+                    <div class="step-desc">gpt-4o-mini ICL<br>진료 기록 요약</div>
+                </div>
+                <div class="pipeline-arrow">➔</div>
+                <div class="pipeline-step">
+                    <div class="step-icon">⚖️</div>
+                    <div class="step-name">4. 교차 검증</div>
+                    <div class="step-desc">3-Vendor LLM Judge<br>사실성/형식 교차 검증</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.divider()
+
+    # 하단 3x3 격자 카드 배치
+    st.markdown("### 📊 9개 핵심 발견 및 연구 성과")
+    st.caption("당연한 줄 알았는데 아닌 것을 정량으로 입증한 프로젝트.")
+
     st.markdown(
-        "## 9개 가설 → **5개 적중, 4개 폐기**\n"
-        "당연한 줄 알았는데 아닌 것을 정량으로 입증한 프로젝트."
+        """
+        <div class="findings-grid-3x3">
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">01</div>
+                    <div class="finding-title">gpt-4o-mini가 GPT-4 수준 달성</div>
+                    <span class="finding-badge badge-hit">✅ 가설 적중</span>
+                </div>
+                <div class="finding-detail">단돈 0.05달러(약 70원)의 비용으로 과거 GPT-4 모델 성능 재현 (비용 1/30로 감축).</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">02</div>
+                    <div class="finding-title">ROUGE는 임상 사실성 평가 불가</div>
+                    <span class="finding-badge badge-hit">✅ 가설 적중</span>
+                </div>
+                <div class="finding-detail">상관관계 Pearson r = 0.254로 극히 저조. ROUGE 점수가 높아도 심각한 의학적 환각이 존재함을 입증.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">03</div>
+                    <div class="finding-title">Korean Format의 AI 판사 편향 감점 여부</div>
+                    <span class="finding-badge badge-discard">❌ 가설 폐기</span>
+                </div>
+                <div class="finding-detail">주요 해외 LLM 판사들이 한국어 포맷팅이나 정렬 형태에 따른 편향 감점을 주지 않음을 정량 검증.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">04</div>
+                    <div class="finding-title">TF-IDF dynamic의 한국어 매칭 효과</div>
+                    <span class="finding-badge badge-discard">❌ 가설 폐기</span>
+                </div>
+                <div class="finding-detail">한국어 환경에서는 무작위(Random)로 추출된 예시를 보여주는 것이 검색 기반 예시보다 더 우수함.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">05</div>
+                    <div class="finding-title">Kiwi 형태소 토크나이저의 성능 개선 여부</div>
+                    <span class="finding-badge badge-discard">❌ 가설 폐기</span>
+                </div>
+                <div class="finding-detail">형태소 기반 토큰 분석을 활용해도 한국어 다이내믹 ICL 검색기의 성능 한계를 극복하지 못함.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">06</div>
+                    <div class="finding-title">임베딩(Embedding) 매칭의 한국어 성능</div>
+                    <span class="finding-badge badge-discard">❌ 가설 폐기</span>
+                </div>
+                <div class="finding-detail">텍스트 임베딩 유사도 매칭 역시 무작위 선택 방식보다 낮은 임상 차팅 정확도를 기록함.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">07</div>
+                    <div class="finding-title">LLM Judge의 자가 편향(Self-bias) 규명</div>
+                    <span class="finding-badge badge-hit">✅ 가설 적중</span>
+                </div>
+                <div class="finding-detail">gpt-4o vs Claude vs Gemini 채점 결과, 자기 가문 모델에 최대 0.7~0.8점의 편향 편차 규명.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">08</div>
+                    <div class="finding-title">Format 평가지표의 일관성 부재</div>
+                    <span class="finding-badge badge-hit">✅ 가설 적중</span>
+                </div>
+                <div class="finding-detail">의무기록 포맷 평가 시 판사 모델 간 상관관계가 Pearson r = -0.04로 일치도 제로에 가깝음.</div>
+            </div>
+            <div class="finding-card">
+                <div class="finding-card-top">
+                    <div class="finding-num">09</div>
+                    <div class="finding-title">국가/언어별 평가 일치도 격차</div>
+                    <span class="finding-badge badge-hit">✅ 가설 적중</span>
+                </div>
+                <div class="finding-detail">한국어 평가의 판사 간 합의도(0.73)가 영어 평가의 합의도(0.59)보다 유의미하게 높게 관측됨.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-
-    # 핵심 숫자 카드 3개
-    k1, k2, k3 = st.columns(3)
-    with k1:
-        st.markdown(
-            '<div class="hero-card">'
-            '<div class="big-num">$0.05</div>'
-            '<div class="stat-label">gpt-4o-mini로 40건 노트 생성 — '
-            'WangLab GPT-4(2023) ROUGE 수준 (1/30 비용)</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-    with k2:
-        st.markdown(
-            '<div class="hero-card">'
-            '<div class="big-num">0.254</div>'
-            '<div class="stat-label">Pearson(ROUGE-1, Factuality) — '
-            'ROUGE는 사실성을 못 잡음 (영어 22%, 한국어 30% 케이스에서 ROUGE↑·환각↑)</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-    with k3:
-        st.markdown(
-            '<div class="hero-card">'
-            '<div class="big-num">0.78점</div>'
-            '<div class="stat-label">gpt-4o vs Gemini judge 격차 — '
-            '단일 judge 결과 self-bias 위험 (Claude·Gemini 교차로 검증)</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-
-    st.divider()
-
-    # CTA
-    cta1, cta2 = st.columns([2, 1])
-    with cta1:
-        st.markdown("### 🎙️ 지금 직접 시연해보세요")
-        st.markdown(
-            "오른쪽 위 **`🎙️ 실시간 시연`** 탭에서 음성 녹음 또는 텍스트 입력으로 "
-            "즉시 SOAP 노트 생성 가능."
-        )
-    with cta2:
-        st.info("💡 마이크 없으면 텍스트 입력 모드 사용")
-
-    st.divider()
-
-    # 9개 발견
-    st.markdown("### 9개 발견 요약")
-    st.markdown("""
-| # | 발견 | 결과 |
-|---|---|---|
-| 1 | gpt-4o-mini가 GPT-4(2023) 수준 ROUGE 달성 | ✅ |
-| 2 | ROUGE는 사실성을 못 잡음 (Pearson 0.254) | ✅ |
-| 3 | ~~Korean Format이 영어 편향 judge로 부당 감점~~ | ❌ 폐기 |
-| 4 | TF-IDF dynamic이 한국어에서 random 못 이김 | ❌ 가설 틀림 |
-| 5 | kiwi 형태소 토크나이저로도 해결 안 됨 | ❌ 가설 틀림 |
-| 6 | Embedding도 한국어 random 못 이김 | ❌ 가설 틀림 |
-| 7 | gpt-4o vs Claude vs Gemini self-bias 0.7–0.8점 | ✅ |
-| 8 | Format 점수는 judge간 합의 없음 (Pearson −0.04) | ✅ |
-| 9 | KO가 EN보다 judge간 합의 높음 (0.73 vs 0.59) | ✅ |
-""")
-
-    st.divider()
-
-    # 사용 기술
-    st.markdown("### 🧰 사용 기술")
-    t1, t2, t3 = st.columns(3)
-    with t1:
-        st.markdown("**LLM**")
-        st.write("- OpenAI gpt-4o-mini (생성)")
-        st.write("- gpt-4o (judge)")
-        st.write("- Claude Sonnet 4.5 (judge)")
-        st.write("- Gemini 2.5 Flash (judge)")
-    with t2:
-        st.markdown("**Retriever**")
-        st.write("- TF-IDF (sklearn)")
-        st.write("- kiwipiepy (한국어 형태소)")
-        st.write("- text-embedding-3-small")
-    with t3:
-        st.markdown("**평가·기타**")
-        st.write("- ROUGE-1/2/L")
-        st.write("- LLM-as-judge (3 vendor)")
-        st.write("- Whisper (ASR)")
-        st.write("- Streamlit + Plotly")
 
 
 # =========================================================
