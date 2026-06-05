@@ -37,8 +37,8 @@
 | KO | Embedding | 0.5398 | 0.4847 | 3.50 | 3.62 | **4.92** |
 
 **관찰**:
-- 영어: Embedding이 ROUGE-1 최고지만 Factuality 최저 → 발견 #2의 결정적 증거 (표면 메트릭과 사실성의 디커플)
-- 한국어: Random이 모든 지표 1위 → 발견 #4-6 (의료 도메인 ICL에서 다양성이 유사도보다 강함)
+- 영어: Embedding이 ROUGE-1 최고지만 Factuality 최저 → 발견 #2의 결정적 증거
+- 한국어: Random이 모든 지표 1위 → 발견 #4-6
 
 ## 3-Vendor Judge 비교 (self-bias 입증)
 
@@ -79,8 +79,6 @@
 | `data/processed/mts_train.jsonl` | 1,201 | MTS-Dialog | △ 전처리만, Future Work |
 | `data/processed/mts_valid.jsonl` | 100 | MTS-Dialog | △ 전처리만, Future Work |
 
-원본 CSV는 `data/raw/`. `python src/preprocess.py`로 재생성 가능.
-
 ---
 
 ## 셋업
@@ -88,56 +86,30 @@
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-# .env 열어서 API 키 입력:
-#   OPENAI_API_KEY=sk-...
-#   ANTHROPIC_API_KEY=sk-ant-...   (선택, judge_multi.py용)
-#   GOOGLE_API_KEY=...             (선택, judge_multi.py용)
+# OPENAI_API_KEY=sk-...
+# ANTHROPIC_API_KEY=sk-ant-...   (선택)
+# GOOGLE_API_KEY=...             (선택)
 ```
 
 ## 재현 (Quick Start)
 
 ```bash
-# 1. 전처리 (CSV → JSONL)
 python src/preprocess.py
-
-# 2. ICL 베이스라인 (영어)
-python src/icl_baseline.py                       # n=20 (~$0.025)
-python src/evaluate.py outputs/icl_gpt-4o-mini_2shot_n20.jsonl
-
-# 3. ICL test1 (영어, n=40, ~$0.05)
-python src/icl_baseline.py \
-    --input data/processed/aci_test1.jsonl \
-    --output outputs/icl_gpt-4o-mini_2shot_test1.jsonl
-
-# 4. 한국어 번역 (~$0.50)
+python src/icl_baseline.py
 python src/translate.py
-
-# 5. ICL 한국어 (~$0.05)
 python src/icl_baseline_ko.py
-
-# 6. Dynamic few-shot (TF-IDF / kiwi / embedding)
 python src/icl_dynamic.py --lang en
 python src/icl_dynamic.py --lang ko --tokenizer kiwi
 python src/icl_embed.py --lang en
 python src/icl_embed.py --lang ko
-
-# 7. LLM-as-judge (gpt-4o)
 python src/judge.py outputs/icl_gpt-4o-mini_2shot_test1.jsonl
-
-# 8. 다중 judge (self-bias 검증)
-python src/judge_multi.py outputs/icl_gpt-4o-mini_2shot_test1.jsonl \
-    --provider anthropic --model claude-sonnet-4-5-20250929
-python src/judge_multi.py outputs/icl_gpt-4o-mini_2shot_test1.jsonl \
-    --provider google --model gemini-2.5-flash
-
-# 9. 통합 분석 (ROUGE + judge 상관)
+python src/judge_multi.py outputs/icl_gpt-4o-mini_2shot_test1.jsonl --provider anthropic --model claude-sonnet-4-5-20250929
+python src/judge_multi.py outputs/icl_gpt-4o-mini_2shot_test1.jsonl --provider google --model gemini-2.5-flash
 python src/analyze.py outputs/icl_gpt-4o-mini_2shot_test1.jsonl
-
-# 10. Streamlit 데모 (브라우저 자동 오픈)
 streamlit run src/app.py
 ```
 
-**전체 재현 비용**: 약 $7 (OpenAI $3 + Anthropic $3 + Google 무료)
+**전체 재현 비용**: 약 $7
 
 ---
 
@@ -146,24 +118,17 @@ streamlit run src/app.py
 ```
 ko-medscribe-llm/
 ├── data/
-│   ├── raw/                  # 원본 CSV (ACI-Bench, MTS-Dialog)
-│   └── processed/            # JSONL 변환 결과
+│   ├── raw/                  # 원본 CSV
+│   └── processed/            # JSONL
 ├── src/
-│   ├── preprocess.py         # CSV → JSONL
-│   ├── translate.py          # 영→한 번역
-│   ├── icl_baseline.py       # EN random k-shot ICL
-│   ├── icl_baseline_ko.py    # KO random k-shot ICL
-│   ├── icl_dynamic.py        # TF-IDF dynamic (whitespace/kiwi)
-│   ├── icl_embed.py          # OpenAI embedding dynamic
-│   ├── evaluate.py           # ROUGE
-│   ├── judge.py              # LLM-as-judge (gpt-4o)
-│   ├── judge_multi.py        # 다중 vendor judge
-│   ├── analyze.py            # ROUGE + judge 통합 분석
-│   └── app.py                # Streamlit 데모
-├── outputs/                  # 실험 결과 jsonl
-├── requirements.txt
-├── .env.example
-└── README.md
+│   ├── preprocess.py · translate.py
+│   ├── icl_baseline.py · icl_baseline_ko.py
+│   ├── icl_dynamic.py · icl_embed.py
+│   ├── evaluate.py · judge.py · judge_multi.py
+│   ├── analyze.py
+│   └── app.py                # Streamlit 데모 (4 tabs)
+├── outputs/
+├── requirements.txt · .env.example · README.md
 ```
 
 ---
@@ -174,24 +139,96 @@ ko-medscribe-llm/
 streamlit run src/app.py
 ```
 
-3개 탭:
-1. **단일 케이스 데모** — 같은 encounter의 EN/KO 동시 표시 + 3-vendor judge 점수
-2. **결과 대시보드** — 9개 발견 시각화 (ROUGE vs Factuality 산점도, retriever 비교, judge 비교)
+4개 탭:
+1. **단일 케이스 데모** — EN/KO 동시 + 3-vendor judge 점수
+2. **결과 대시보드** — 9개 발견 시각화
 3. **환각 사례 갤러리** — Factuality 낮은 케이스 + 판단 근거
+4. **🎙️ 실시간 녹음 (Whisper)** — 마이크 → 한·영 SOAP 노트 생성
 
 ---
 
-## 한계 및 Future Work
+## 한계 (Limitations)
 
-**한계 (Limitations)**:
-- **Cross-Border 도메인 격차**: 미국 ACI-Bench 기반이라 국내 보험수가 및 처방 트렌드 반영 불가 (단순 번역 노이즈 이상의 도메인 Gap 존재).
-- **Random 2-shot의 변동성(Variance)**: 임베딩/TF-IDF 리트리버 전멸로 Random을 채택했으나, 상용 환경에서 무작위 예시 매칭 시 출력 품질 변동성 통제 불가.
-- **메트릭 디커플링 및 Rubric 한계**: ROUGE의 사실성 측정 한계를 규명했음에도 아키텍처 선별에 ROUGE가 개입된 점, Format 평가에서 Judge 간 합의율 음수(-0.04)로 인한 채점 기준의 느슨함 확인 ($n=40$의 통계적 유의성 한계 포함).
+본 프로젝트는 **연구·학습용 프로토타입**. 실 임상 적용 전 반드시 검토할 한계.
 
-**Future Work**:
-- 원자적(Atomic) 체크리스트 방식의 Judge Rubric 고도화 및 인간 의사 평가와의 정합성 분석.
-- MTS-Dialog 활용 및 오인식 노이즈를 주입한 한국어 의료 코퍼스 기반의 LoRA Fine-tuning 비교 실험.
-- 의료 도메인 특화 임베딩(BioBERT 등) 및 Whisper 에러 전파를 막기 위한 전처리 보정 레이어 설계.
+### 1. 데이터
+- **모의 시나리오**: ACI-Bench는 배우 기반 모의 대화. 실 환자-의사 자연 대화의 머뭇거림·중단·동시 발화 부재.
+- **미국 의료 환경 종속**: CPT 코드, 미국 약물명, 미국 보험 체계 기반 → 한국 진료 패턴·약가·심사 기준 반영 불가.
+- **샘플 크기**: train 67 / test 40 — fine-tuning 부족, statistical power 한계.
+- **테스트 split 단일**: 1개 split만 평가 → variance 통제 불가, cross-validation 미적용.
+- **음성 원본 부재**: 이미 텍스트화된 dialogue만. 실 음성 노이즈·diarization 효과 미반영.
+- **메타데이터 분리**: 환자 나이·성별·기왕력이 별도 metadata CSV에 있고 dialogue엔 자연어로만 등장 → 모델이 환자 식별 정보를 환각으로 만들기 쉬움.
+- **데이터 누수 가능성**: ACI-Bench는 2023년 공개 → gpt-4o-mini 학습 데이터에 포함됐을 가능성. 본 결과의 과대평가 위험 미검증.
+
+### 2. 한국어 파이프라인
+- **자동 번역 노이즈**: gpt-4o-mini 영→한 번역. 의료 용어 정확도 미검증.
+- **번역체 vs 실 의무기록**: 환자명·약물명 영문 유지, 한국 의무기록 관습(약어, KCD-7) 미반영.
+- **한국 표준 미연계**: 보건복지부 의무기록 가이드, KCD-7, KAAACI 가이드라인 미사용.
+- **한국 의료 어휘 사전 부재**: kiwi는 일반어 형태소 분석기. 의료 복합어("고혈압" → "고"+"혈압") 과분할.
+
+### 3. 모델·인프라
+- **Closed-source 의존**: gpt-4o-mini / gpt-4o / Claude / Gemini / Whisper 모두 외부 API. 모델 silent update 시 재현성 흔들림.
+- **PHI/개인정보 처리 부재**: 환자 데이터가 OpenAI·Anthropic·Google 서버로 전송. **HIPAA·PIPA 준수 미검토**.
+- **로컬 실행 옵션 없음**: Llama·whisper.cpp 등 self-hosted 미구현.
+- **모델 버전 미고정**: requirements.txt에 model snapshot pin 없음.
+
+### 4. ICL·Retriever 실험
+- **k=2만 테스트**: k=4, 8 효과 미검증.
+- **Pool 크기 67 고정**: random 우위가 큰 풀(MTS 1,201)에서도 유지될지 미검증.
+- **Temperature 0.2 고정**: 0.0, 0.5 미탐색.
+- **Embedding 1종**: text-embedding-3-small만. multilingual-e5, BGE-M3, MedCPT, BioBERT 미시도.
+- **Cross-encoder 재랭킹 미시도**.
+- **Hybrid retrieval (BM25+dense) 미시도**.
+- **Fine-tuning 비교 없음**.
+
+### 5. 평가 방법론
+- **인간 의사 평가 0건**: LLM-as-judge는 근사. Gold standard 없음.
+- **의료 특화 메트릭 부재**: MEDCON, UMLS entity F1, ICD coding accuracy 미사용.
+- **통계 검정 부재**: paired t-test, McNemar, bootstrap CI 안 함 — retriever 차이가 우연인지 미검증.
+- **단일 seed**: 1회 실행만. multi-seed 평균·분산 없음.
+- **Inter-rater agreement 부분 측정**: Pearson만. Cohen's kappa·Krippendorff α 미보고.
+- **Judge 자체 환각**: judge의 평가가 항상 옳다는 가정 미검증.
+
+### 6. Whisper / ASR
+- **의료 전문용어 인식률 미검증**: 한국어 약물명·진단명 정확도 미측정.
+- **Diarization 부재**: 의사·환자 화자 분리 없음 → 누가 말했는지 모델이 추론.
+- **실시간 스트리밍 X**: 녹음 종료 후 일괄 전사.
+- **잡음·다중 화자·마스크 환경 미평가**.
+
+### 7. 임상 안전·규제
+- **임상 검증 0건**: 의사·환자 안전 평가 부재.
+- **약물 상호작용·금기 체크 없음**.
+- **표준 코딩(ICD-10/SNOMED CT/KCD-7) 미연계**.
+- **의료기기 규제 미검토**: 식약처 SaMD, FDA 510(k).
+- **감사 로그·접근 통제·비식별화 없음**.
+- **의사 승인·수정 워크플로우 부재**.
+
+### 8. 엔지니어링
+- **단위 테스트 0개**.
+- **CI/CD 미구성**.
+- **에러 처리 최소화**: API 실패 시 단순 skip, retry/backoff 미구현.
+- **로깅 시스템 없음**: print만.
+- **비동기 호출 미사용**: 대량 처리 시 비효율.
+- **Streamlit 데모 미배포**: 로컬만, 동시 사용자·인증·rate limit 없음.
+
+### 9. 본 프로젝트 자체의 메타 한계
+- **Random 채택의 위험**: KO에서 random이 최강이라는 발견은 "통제 불가능한 변동성" — 상용 환경에선 매 실행 결과 다름.
+- **Retriever 비교에 ROUGE 사용**: ROUGE 한계를 입증한 프로젝트가 architecture 선택엔 ROUGE를 부분 참고 — circular 한계.
+- **Format 메트릭 자체 의문**: judge간 합의 음수(−0.04) → 본 프로젝트 Format 점수는 사실상 의미 없음.
+
+---
+
+## Future Work
+
+- **인간 의사 평가**와 LLM-judge 정합성 분석.
+- **원자적(Atomic) 체크리스트 rubric**: 환자 나이/성별/약물/진단 단위로 분해 채점.
+- **MTS-Dialog Task A + Pool size 단계 실험**: 67→200→500→1,200 retriever 효용 곡선.
+- **한국어 실 임상 코퍼스**: IRB·비식별화 후 fine-tuning 비교.
+- **의료 도메인 특화 retriever**: MedCPT, BioBERT, ClinicalBERT.
+- **Whisper 의료 어휘 후처리**: 한국어 의료 사전 기반 오인식 보정.
+- **로컬 실행 옵션**: Llama-3-8B + whisper.cpp (HIPAA·PIPA 대응).
+- **Statistical 검증 강화**: paired test, bootstrap CI, multi-seed.
+- **Diarization 통합**: pyannote 화자 분리.
 
 ---
 
@@ -199,12 +236,12 @@ streamlit run src/app.py
 
 - **ACI-Bench** (Yim et al., Nature Scientific Data 2023) — https://www.nature.com/articles/s41597-023-02487-3
 - **MEDIQA-Chat 2023 Overview** (Ben Abacha et al.) — https://aclanthology.org/2023.clinicalnlp-1.52/
-- **WangLab at MEDIQA-Chat 2023** (winning solution, GPT-4 ICL) — https://aclanthology.org/2023.clinicalnlp-1.36/
+- **WangLab at MEDIQA-Chat 2023** — https://aclanthology.org/2023.clinicalnlp-1.36/
 - **When Reasoning Hurts** (2026) — https://arxiv.org/abs/2605.24902
-- **Tierney et al., NEJM AI 2025** (Ambient AI scribe RCT) — https://ai.nejm.org/doi/abs/10.1056/AIoa2501000
+- **Tierney et al., NEJM AI 2025** — https://ai.nejm.org/doi/abs/10.1056/AIoa2501000
 
 ---
 
 ## 라이선스
 
-코드: MIT. 데이터: 각 원본 출처의 라이선스 준수 (ACI-Bench/MTS-Dialog).
+코드: MIT. 데이터: 각 원본 출처 라이선스 준수 (ACI-Bench/MTS-Dialog).
