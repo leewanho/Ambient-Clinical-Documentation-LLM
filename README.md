@@ -8,19 +8,37 @@
 
 ## TL;DR — 9개 발견
 
-| # | 발견 | 결과 |
-|---|---|---|
-| 1 | gpt-4o-mini가 GPT-4(2023, WangLab) 수준 ROUGE 달성 ($0.05/40건) | ✅ |
-| 2 | ROUGE는 사실성을 못 잡음 (Pearson 0.254) | ✅ |
-| 3 | ~~Korean Format이 영어 편향 judge로 부당 감점~~ | ❌ 폐기 (실측: 차이 없음) |
-| 4 | TF-IDF dynamic few-shot이 한국어에서 random 못 이김 | ❌ 가설 틀림 |
-| 5 | kiwi 형태소 토크나이저로도 해결 안 됨 (유사도↑ but 성능↓) | ❌ 가설 틀림 |
-| 6 | Embedding (text-emb-3-small)도 KO에서 random 못 이김 | ❌ 가설 틀림 |
-| 7 | gpt-4o vs Claude vs Gemini self-bias 0.7–0.8점 | ✅ |
-| 8 | Format 점수는 judge간 합의 없음 (Pearson −0.04) | ✅ |
-| 9 | KO가 EN보다 judge간 합의 높음 (Pearson 0.73 vs 0.59) | ✅ |
+| # | 발견 | 유형 | 결과 |
+|---|---|---|---|
+| 1 | gpt-4o-mini가 GPT-4(2023, WangLab) 수준 ROUGE 달성 ($0.05/40건) | 사전 가설 | ✅ 가설 적중 |
+| 2 | ROUGE는 사실성을 못 잡음 (Pearson 0.254) | 사전 가설 | ✅ 가설 적중 |
+| 3 | Korean Format이 영어 편향 judge로 부당 감점 | 사전 가설 | ❌ 가설 폐기 |
+| 4 | TF-IDF dynamic few-shot이 한국어에서 random 못 이김 | 사전 가설 | ❌ 가설 폐기 |
+| 5 | kiwi 형태소 토크나이저로도 해결 안 됨 (유사도↑ but 성능↓) | 단계 검증 가설 | ❌ 가설 폐기 |
+| 6 | Embedding (text-emb-3-small)도 KO에서 random 못 이김 | 단계 검증 가설 | ❌ 가설 폐기 |
+| 7 | gpt-4o vs Claude vs Gemini self-bias 0.7–0.8점 | 외부 통용 검증 | ✅ 가설 적중 |
+| 8 | Format 점수는 judge간 합의 없음 (Pearson −0.04) | 사후 패턴 발견 | ✅ 가설 적중 |
+| 9 | KO가 EN보다 judge간 합의 높음 (Pearson 0.73 vs 0.59) | 사후 패턴 발견 | ✅ 가설 적중 |
 
-**가설 9개 중 5개 적중, 4개 폐기.** 가장 큰 학술적 가치 = "당연한 줄 알았는데 아닌 것"을 정량 입증.
+**9개 명제 정량 검증 요약**:
+- **사전 가설 4개** → 2 적중 (#1, #2) · 2 폐기 (#3, #4)
+- **단계 검증 가설 2개** → 모두 폐기 (#5, #6) — 가설 폐기 자체가 발견
+- **외부 통용 검증 1개** → 적중 (#7)
+- **사후 패턴 발견 2개** → 적중 (#8, #9)
+
+가장 큰 학술적 가치 = 사전 가정 폐기 4건의 정직한 정량 입증 + 단일 LLM-judge self-bias 검증.
+
+---
+
+## 🛠️ Tech Stack & NLP Methods (사용한 NLP 기술)
+
+본 프로젝트는 전통적인 자연어 처리(NLP) 기법부터 최신 생성형 AI(Generative AI) 기술을 아우르는 **종합 NLP 파이프라인**을 갖추고 실험·구현되었습니다.
+
+- **Generative NLP (생성 및 추론)**: In-Context Learning (Few-shot ICL), Prompt Engineering, `gpt-4o-mini` (생성 모델)
+- **Retrieval NLP (정보 검색)**: TF-IDF (Term Frequency-Inverse Document Frequency) Retriever, Dense Text Embedding Retriever (`text-embedding-3-small`)
+- **Korean Tokenization (한국어 형태소 분석)**: Kiwi 형태소 분석기 (`kiwipiepy`) 기반의 토크나이저 및 어휘 유사도 검색
+- **Evaluation NLP (자연어 평가)**: ROUGE-1 / ROUGE-2 / ROUGE-L (어휘 중첩도 기반 자동 평가), LLM-as-a-Judge 크로스 평가 (gpt-4o, Claude, Gemini)
+- **Speech NLP (음성 언어 처리)**: OpenAI Whisper ASR (자동 음성 인식) API를 통한 실시간 의사-환자 음성 전사 및 요약 파이프라인
 
 ---
 

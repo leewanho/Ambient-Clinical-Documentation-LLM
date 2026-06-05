@@ -267,7 +267,7 @@ st.markdown(
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin: 0;
-        font-size: 2.8rem;
+        font-size: 3.2rem;
     }
 
     /* Metric Cards */
@@ -282,6 +282,7 @@ st.markdown(
         overflow: hidden;
         margin-bottom: 1rem;
         height: 100%;
+        min-height: 240px;
     }
 
     .hero-card::before {
@@ -294,14 +295,47 @@ st.markdown(
         background: linear-gradient(to bottom, #3b82f6, #6366f1);
     }
 
+    /* Color modifiers for different cards */
+    .hero-card-blue {
+        background: #f0f9ff !important;
+        border: 1px solid #bae6fd !important;
+    }
+    .hero-card-blue::before {
+        background: linear-gradient(to bottom, #0ea5e9, #2563eb) !important;
+    }
+    .hero-card-blue:hover {
+        border-color: #7dd3fc !important;
+    }
+
+    .hero-card-orange {
+        background: #fff7ed !important;
+        border: 1px solid #fed7aa !important;
+    }
+    .hero-card-orange::before {
+        background: linear-gradient(to bottom, #f97316, #dc2626) !important;
+    }
+    .hero-card-orange:hover {
+        border-color: #fdba74 !important;
+    }
+
+    .hero-card-purple {
+        background: #faf5ff !important;
+        border: 1px solid #e9d5ff !important;
+    }
+    .hero-card-purple::before {
+        background: linear-gradient(to bottom, #a855f7, #ec4899) !important;
+    }
+    .hero-card-purple:hover {
+        border-color: #d8b4fe !important;
+    }
+
     .hero-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.08), 0 6px 8px -6px rgba(0, 0, 0, 0.08);
-        border-color: #cbd5e1;
     }
 
     .card-title {
-        font-size: 0.8rem;
+        font-size: 1.25rem;
         font-weight: 700;
         color: #4f46e5;
         letter-spacing: 0.5px;
@@ -309,8 +343,18 @@ st.markdown(
         margin-bottom: 0.5rem;
     }
 
+    .card-title-blue {
+        color: #2563eb !important;
+    }
+    .card-title-orange {
+        color: #ea580c !important;
+    }
+    .card-title-purple {
+        color: #7c3aed !important;
+    }
+
     .big-num {
-        font-size: 2.2rem;
+        font-size: 1.85rem;
         font-weight: 800;
         color: #1e293b;
         line-height: 1.1;
@@ -320,10 +364,26 @@ st.markdown(
         -webkit-text-fill-color: transparent;
     }
 
+    .big-num-blue {
+        background: linear-gradient(135deg, #1e293b 30%, #2563eb 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+    }
+    .big-num-orange {
+        background: linear-gradient(135deg, #1e293b 30%, #dc2626 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+    }
+    .big-num-purple {
+        background: linear-gradient(135deg, #1e293b 30%, #ec4899 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+    }
+
     .stat-label {
-        font-size: 0.8rem;
-        color: #64748b;
-        line-height: 1.5;
+        font-size: 1.15rem;
+        color: #475569;
+        line-height: 1.6;
     }
 
     /* Technical Pipeline Flowchart */
@@ -354,12 +414,12 @@ st.markdown(
     .step-name {
         font-weight: 700;
         color: #0f172a;
-        font-size: 1.35rem;
+        font-size: 1.55rem;
         margin-bottom: 0.4rem;
     }
 
     .step-desc {
-        font-size: 1.05rem;
+        font-size: 1.25rem;
         color: #1e293b;
         line-height: 1.6;
     }
@@ -395,9 +455,9 @@ st.markdown(
         right: 1rem;
         background: #4f46e5;
         color: white;
-        font-size: 0.68rem;
+        font-size: 0.85rem;
         font-weight: 800;
-        padding: 0.2rem 0.6rem;
+        padding: 0.35rem 0.8rem;
         border-radius: 9999px;
         letter-spacing: 0.5px;
     }
@@ -406,13 +466,13 @@ st.markdown(
         color: #312e81;
         font-weight: 800;
         margin-top: 0;
-        margin-bottom: 0.6rem;
-        font-size: 1.2rem;
+        margin-bottom: 0.8rem;
+        font-size: 1.55rem;
     }
 
     .cta-card p {
         color: #3730a3;
-        font-size: 0.88rem;
+        font-size: 1.2rem;
         line-height: 1.6;
         margin: 0;
     }
@@ -436,7 +496,7 @@ st.markdown(
     }
 
     .category-name {
-        font-size: 0.8rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #475569;
         text-transform: uppercase;
@@ -450,7 +510,7 @@ st.markdown(
     }
 
     .tech-tag {
-        font-size: 0.78rem;
+        font-size: 1.05rem;
         font-weight: 500;
         color: #0f172a;
         background: #f1f5f9;
@@ -465,22 +525,33 @@ st.markdown(
         transform: translateY(-1px);
     }
 
-    /* Findings 3x3 Grid */
-    .findings-grid-3x3 {
+    .findings-section-title {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 2rem;
+        margin-bottom: 0.8rem;
+        padding-left: 0.6rem;
+        border-left: 4px solid #4f46e5;
+        line-height: 1.2;
+    }
+
+    /* Findings Grid */
+    .findings-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 1rem;
-        margin-top: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     @media (max-width: 1024px) {
-        .findings-grid-3x3 {
+        .findings-grid {
             grid-template-columns: repeat(2, 1fr);
         }
     }
 
     @media (max-width: 768px) {
-        .findings-grid-3x3 {
+        .findings-grid {
             grid-template-columns: 1fr;
         }
     }
@@ -513,7 +584,7 @@ st.markdown(
         background: #f1f5f9;
         color: #475569;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 1.15rem;
         padding: 0.25rem 0.55rem;
         border-radius: 6px;
         min-width: 32px;
@@ -523,13 +594,13 @@ st.markdown(
     .finding-title {
         font-weight: 700;
         color: #1e293b;
-        font-size: 0.92rem;
+        font-size: 1.25rem;
         line-height: 1.3;
         flex: 1;
     }
 
     .finding-badge {
-        font-size: 0.7rem;
+        font-size: 1.0rem;
         font-weight: 700;
         padding: 0.2rem 0.5rem;
         border-radius: 9999px;
@@ -548,9 +619,9 @@ st.markdown(
     }
 
     .finding-detail {
-        font-size: 0.82rem;
+        font-size: 1.1rem;
         color: #64748b;
-        line-height: 1.5;
+        line-height: 1.6;
     }
 
     /* Table Styling */
@@ -621,6 +692,15 @@ st.markdown(
         color: #0f172a !important;
         font-weight: 700 !important;
     }
+
+    .tab-subtitle {
+        font-size: 1.1rem !important;
+        color: #475569 !important;
+        font-weight: 500 !important;
+        margin-top: -0.8rem !important;
+        margin-bottom: 1.5rem !important;
+        line-height: 1.5 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -630,7 +710,7 @@ st.markdown(
     """
     <div class="main-header">
         <h1>📋 Ambient Clinical Documentation LLM</h1>
-        <p style="margin-top:0.8rem; font-size:1.4rem; opacity:0.85; line-height:1.5; font-weight: 400;">
+        <p style="margin-top:0.8rem; font-size:1.6rem; opacity:0.85; line-height:1.5; font-weight: 400;">
             MEDIQA-Chat 2023 (ACI-Bench Task B) 재현 · 한국어 확장<br>
             ROUGE / LLM-judge 한계 검증 · 9개 가설 정량 테스트
         </p>
@@ -653,7 +733,7 @@ tab0, tab1, tab2, tab3, tab4 = st.tabs([
 # =========================================================
 with tab0:
     st.markdown("## 프로젝트 한 눈에")
-    st.caption("풀스택 임상 노트 파이프라인 구축 + 9개 가설 정량 검증.")
+    st.markdown('<p class="tab-subtitle">풀스택 임상 노트 파이프라인 구축 + 9개 가설 정량 검증.</p>', unsafe_allow_html=True)
 
     # 상단 2열 배치 (40% : 60%)
     col_left, col_right = st.columns([1.6, 2.4])
@@ -711,28 +791,28 @@ with tab0:
         k1, k2, k3 = st.columns(3)
         with k1:
             st.markdown(
-                '<div class="hero-card">'
-                '<div class="card-title">[ 빌드 규모 ]</div>'
-                '<div class="big-num">7×3×2</div>'
-                '<div class="stat-label">7 retriever × 3 vendor judge × 2 lang(EN/KO) 전수 평가 파이프라인 구축 및 데모 구현</div>'
+                '<div class="hero-card hero-card-blue">'
+                '<div class="card-title card-title-blue">[ 검증 깊이 ]</div>'
+                '<div class="big-num big-num-blue">42개 평가 시나리오</div>'
+                '<div class="stat-label">다양한 진료 상황과 번역체 데이터에 대해 국내외 대형 AI 모델들을 동원해 촘촘한 테스트 완료</div>'
                 '</div>',
                 unsafe_allow_html=True,
             )
         with k2:
             st.markdown(
-                '<div class="hero-card">'
-                '<div class="card-title">[ 메트릭 패러독스 ]</div>'
-                '<div class="big-num">0.254</div>'
-                '<div class="stat-label">Pearson(ROUGE-1, Factuality) — ROUGE는 사실성 평가 불가. 영 22%·한 30% 케이스에서 괴리 관측</div>'
+                '<div class="hero-card hero-card-orange">'
+                '<div class="card-title card-title-orange">[ 의료 AI의 맹점 ]</div>'
+                '<div class="big-num big-num-orange">어휘와 팩트 차이</div>'
+                '<div class="stat-label">기계적인 단어 일치 점수가 아무리 높아도, 오진이나 거짓 처방 기록이 숨어있을 수 있음을 규명</div>'
                 '</div>',
                 unsafe_allow_html=True,
             )
         with k3:
             st.markdown(
-                '<div class="hero-card">'
-                '<div class="card-title">[ 평가자 패러독스 ]</div>'
-                '<div class="big-num">0.78점</div>'
-                '<div class="stat-label">gpt-4o vs Gemini judge 격차 — 단일 judge 신뢰 불가. 교차 평가를 통한 self-bias 편향 입증</div>'
+                '<div class="hero-card hero-card-purple">'
+                '<div class="card-title card-title-purple">[ AI 판사의 신뢰도 ]</div>'
+                '<div class="big-num big-num-purple">0.78점 주관적 편차</div>'
+                '<div class="stat-label">하나의 AI 모델에게만 진료 기록 평가를 전적으로 맡겨선 안 된다는 정량적 통계 확보</div>'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -773,11 +853,12 @@ with tab0:
 
     # 하단 3x3 격자 카드 배치
     st.markdown("### 📊 9개 핵심 발견 및 연구 성과")
-    st.caption("당연한 줄 알았는데 아닌 것을 정량으로 입증한 프로젝트.")
+    st.markdown('<p class="tab-subtitle">당연한 줄 알았는데 아닌 것을 정량으로 입증한 프로젝트.</p>', unsafe_allow_html=True)
 
     st.markdown(
         """
-        <div class="findings-grid-3x3">
+        <div class="findings-section-title">1️⃣ 사전 가설 (Prior Hypotheses)</div>
+        <div class="findings-grid">
             <div class="finding-card">
                 <div class="finding-card-top">
                     <div class="finding-num">01</div>
@@ -810,6 +891,10 @@ with tab0:
                 </div>
                 <div class="finding-detail">한국어 환경에서는 무작위(Random)로 추출된 예시를 보여주는 것이 검색 기반 예시보다 더 우수함.</div>
             </div>
+        </div>
+
+        <div class="findings-section-title">2️⃣ 단계 검증 가설 (Follow-up Hypotheses)</div>
+        <div class="findings-grid">
             <div class="finding-card">
                 <div class="finding-card-top">
                     <div class="finding-num">05</div>
@@ -826,6 +911,10 @@ with tab0:
                 </div>
                 <div class="finding-detail">텍스트 임베딩 유사도 매칭 역시 무작위 선택 방식보다 낮은 임상 차팅 정확도를 기록함.</div>
             </div>
+        </div>
+
+        <div class="findings-section-title">3️⃣ 외부 통용 검증 (External Validation)</div>
+        <div class="findings-grid">
             <div class="finding-card">
                 <div class="finding-card-top">
                     <div class="finding-num">07</div>
@@ -834,6 +923,10 @@ with tab0:
                 </div>
                 <div class="finding-detail">gpt-4o vs Claude vs Gemini 채점 결과, 자기 가문 모델에 최대 0.7~0.8점의 편향 편차 규명.</div>
             </div>
+        </div>
+
+        <div class="findings-section-title">4️⃣ 사후 패턴 발견 (Post-hoc Findings)</div>
+        <div class="findings-grid">
             <div class="finding-card">
                 <div class="finding-card-top">
                     <div class="finding-num">08</div>

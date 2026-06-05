@@ -320,17 +320,17 @@ with tab2:
 
     st.subheader("5. 9개 발견 요약")
     st.markdown("""
-| # | 발견 | 가설 결과 |
-|---|---|---|
-| 1 | gpt-4o-mini가 GPT-4(2023) ROUGE 동급 ($0.05/40건) | ✅ |
-| 2 | ROUGE는 사실성 못 잡음 (Pearson 0.254) | ✅ |
-| 3 | ~~한국어 Format 부당 감점~~ | ❌ 폐기 |
-| 4 | TF-IDF dynamic이 한국어에서 random 못 이김 | ❌ |
-| 5 | kiwi 형태소 토크나이저로도 해결 안 됨 | ❌ |
-| 6 | Embedding도 KO에서 random 못 이김 | ❌ |
-| 7 | gpt-4o vs Claude vs Gemini self-bias 0.7-0.8점 | ✅ |
-| 8 | Format 점수는 judge간 합의 없음 (Pearson −0.04) | ✅ |
-| 9 | KO가 EN보다 judge간 합의 높음 (0.73 vs 0.59) | ✅ |
+| # | 발견 | 유형 | 가설 결과 |
+|---|---|---|---|
+| 1 | gpt-4o-mini가 GPT-4(2023) ROUGE 동급 ($0.05/40건) | 사전 가설 | ✅ 가설 적중 |
+| 2 | ROUGE는 사실성 못 잡음 (Pearson 0.254) | 사전 가설 | ✅ 가설 적중 |
+| 3 | ~~한국어 Format 부당 감점~~ | 사전 가설 | ❌ 가설 폐기 |
+| 4 | TF-IDF dynamic이 한국어에서 random 못 이김 | 사전 가설 | ❌ 가설 폐기 |
+| 5 | kiwi 형태소 토크나이저로도 해결 안 됨 | 단계 검증 가설 | ❌ 가설 폐기 |
+| 6 | Embedding도 KO에서 random 못 이김 | 단계 검증 가설 | ❌ 가설 폐기 |
+| 7 | gpt-4o vs Claude vs Gemini self-bias 0.7-0.8점 | 외부 통용 검증 | ✅ 가설 적중 |
+| 8 | Format 점수는 judge간 합의 없음 (Pearson −0.04) | 사후 패턴 발견 | ✅ 가설 적중 |
+| 9 | KO가 EN보다 judge간 합의 높음 (0.73 vs 0.59) | 사후 패턴 발견 | ✅ 가설 적중 |
 """)
 
 
