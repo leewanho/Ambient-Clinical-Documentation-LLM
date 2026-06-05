@@ -24,6 +24,58 @@
 
 ---
 
+## 🚀 핵심 인사이트 — 3대 패러독스
+
+위 9개 발견을 가로지르는 **3가지 역설(Paradox)** 로 본 프로젝트의 진짜 가치를 정리.
+
+### 📌 Insight 1. 메트릭의 패러독스 (The Metric Paradox)
+
+> **"어휘가 비슷하다고 사실인 것은 아니다."**
+> 자연어 처리 표준 메트릭(ROUGE)이 의료 도메인에서 갖는 한계와 위험성.
+
+**🔍 어휘적 유사도와 임상적 사실성의 디커플링**
+- **발견 #2**: ROUGE와 LLM-judge Factuality 간 Pearson 상관계수 **0.254** — 약한 상관. ROUGE는 임상적 팩트의 왜곡(나이·이름·약물명 환각)을 잡아내지 못함.
+
+**🔍 검색 고도화가 유발한 "그럴듯한 환각"**
+- **발견 #6 (영어 데이터의 반전)**: Embedding 검색(`text-embedding-3-small`)이 **ROUGE-1 최고점(0.5968)** 을 기록했으나, 정작 **Factuality는 최저치(3.70 ↓)** 로 추락.
+- **원인**: 리트리버가 어휘적으로 가장 유사한 Few-shot 예시를 가져오니, 모델이 그 예시의 다른 환자 진단명·약물 맥락에 오염(Contamination)되어 "문장은 매끄럽지만 내용은 거짓인" 환각을 생성.
+
+---
+
+### 📌 Insight 2. 리트리버의 패러독스 (The Low-Resource Retriever Paradox)
+
+> **"소규모 도메인 풀(n=67)에서는 정교한 검색 알고리즘이 무작위(Random)보다 무력하다."**
+> RAG/고도화된 퓨샷 검색이 항상 우수할 것이라는 공학적 가정에 대한 반례. **(단, n=67 조건 한정 — 더 큰 풀에선 결론 달라질 수 있음. Future Work 참조.)**
+
+**🔍 한국어 환경에서 무력화된 TF-IDF·Embedding**
+- **발견 #4**: TF-IDF Dynamic Few-shot이 Random을 못 이김 (Factuality: Random 3.55 vs TF-IDF 3.42).
+- **발견 #6**: Multilingual Embedding 검색도 Random 대비 우위 없음 — 모든 지표 하락 (Factuality 3.50, ROUGE-1 0.5398).
+
+**🔍 도메인 특성이 결여된 토크나이저의 역효과**
+- **발견 #5**: 일반 한국어 형태소 분석기(`kiwi`)로 어휘 유사도를 강제로 높였으나(0.21→0.35), 생성 성능은 오히려 저하. 의료 복합어("고혈압" → "고"+"혈압") 과분할로 리트리버가 엉뚱한 퓨샷 매칭.
+
+---
+
+### 📌 Insight 3. 평가자의 패러독스 (The Judge Paradox)
+
+> **"LLM-judge는 사실을 판별할 땐 협력하지만, 자존심(Self-bias) 앞에서는 갈라진다."**
+> 인간 평가가 없는 상황에서 LLM-as-judge 방법론을 사용할 때의 신뢰 경계선.
+
+**🔍 3대 대형 LLM의 정량적 Self-bias**
+- **발견 #7**: `gpt-4o` / `Claude` / `Gemini` 3개 모델 크로스 판정 결과, 자신과 같은 vendor(`gpt-4o-mini`) 출력에 **평균 0.7~0.8점 가산점**. Factuality 격차: gpt-4o(3.83) vs Gemini(3.05) — 0.78점.
+
+**🔍 포맷(Format) 평가의 무용성 vs 사실성의 합의**
+- **발견 #8**: Format 점수 Judge간 Pearson 상관 **−0.04** — 상호 합의 전무. **LLM-judge에게 절대적 포맷 채점은 불가능.**
+- **발견 #9**: 반대로 Factuality는 한국어에서 EN(0.59)보다 KO(0.73) judge간 합의 더 높음. 번역 노이즈로 오류가 모든 judge에 명백.
+
+---
+
+### 🛠️ Engineering Takeaway
+
+1. **엔지니어링 낭비 방지**: 소규모 데이터 풀(n<100)에서는 리트리버 고도화(Embedding, 형태소 분석)에 리소스 쓰기보다 **확실한 고정 템플릿 Few-shot이 성능·비용 모두 이득**.
+2. **LLM 평가 가이드라인**: LLM-judge 설계 시 **Format 평가는 제외**, **Factuality 위주의 원자적(Atomic) 체크리스트** 권장. Self-bias 보정은 Future Work — 다중 vendor 평균 또는 normalize 공식 필요.
+3. **실시간 데모로 검증**: `streamlit run app2.py` 4개 탭에서 위 3대 패러독스 + 환각 사례 갤러리 시각화.
+
 ## 핵심 결과 표 (ACI-Bench test1, n=40, gpt-4o-mini ICL 2-shot, gpt-4o judge)
 
 | Lang | Retriever | ROUGE-1 | ROUGE-L | Factuality | Completeness | Format |
