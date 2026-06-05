@@ -6,3 +6,5 @@ venv/
 data/
 outputs/
 .ipynb_checkpoints/
+project_explanation.md
+make_excel.py
