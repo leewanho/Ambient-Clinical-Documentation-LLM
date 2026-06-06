@@ -11,6 +11,7 @@ Run:
 """
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 from statistics import mean
@@ -144,6 +145,100 @@ def pearson(xs, ys):
 
 
 # ---------- header ----------
+st.markdown(
+    """
+    <style>
+    /* Document Card Viewers */
+    .doc-viewer-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        margin-bottom: 1.5rem;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .doc-viewer-card:hover {
+        box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.05);
+        border-color: #cbd5e1;
+    }
+    
+    .doc-viewer-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+    }
+    
+    .doc-viewer-dlg::before {
+        background: #8b5cf6 !important;
+    }
+    .doc-viewer-ref::before {
+        background: #10b981 !important;
+    }
+    .doc-viewer-pred::before {
+        background: #3b82f6 !important;
+    }
+    
+    .doc-viewer-header {
+        padding: 0.8rem 1.2rem;
+        border-bottom: 1px solid #f1f5f9;
+        background: #f8fafc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .doc-viewer-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .doc-viewer-body {
+        padding: 1.2rem;
+        overflow-y: auto;
+        font-size: 1.05rem;
+        line-height: 1.6;
+        color: #334155;
+        white-space: pre-wrap;
+    }
+    
+    .doc-viewer-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    .doc-viewer-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    .doc-viewer-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 9999px;
+    }
+    .doc-viewer-body::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    .filter-card-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("📋 ko-medscribe-llm")
 st.markdown(
     "**Ambient Clinical Documentation LLM** — MEDIQA-Chat 2023 Task B 재현 + "
@@ -165,23 +260,25 @@ with tab1:
     st.header("실시간 노트 생성 + 평가 — 영·한 동시 비교")
     st.caption("같은 encounter를 영어/한국어로 동시 표시. 번역 노이즈가 사실성·포맷에 미치는 영향 직접 확인.")
 
-    c1, c2 = st.columns([2, 2])
-    with c1:
-        en_items = load_jsonl(DATA / "aci_test1.jsonl")
-        ko_items = load_jsonl(DATA / "aci_test1_ko.jsonl")
-        if not en_items or not ko_items:
-            st.error("aci_test1 / aci_test1_ko 없음 — preprocess.py + translate.py 실행 필요")
-            st.stop()
-        en_ids = [x.get("meta", {}).get("encounter_id", f"#{i}") for i, x in enumerate(en_items)]
-        ko_ids = [x.get("meta", {}).get("encounter_id", f"#{i}") for i, x in enumerate(ko_items)]
-        common_ids = sorted(set(en_ids) & set(ko_ids))
-        sel = st.selectbox("케이스 ID", common_ids, key="case_t1")
-    with c2:
-        retriever = st.selectbox(
-            "Retriever",
-            ["Random", "Dynamic TF-IDF", "Embedding"],
-            key="retriever_t1",
-        )
+    with st.container(border=True):
+        st.markdown('<div class="filter-card-title">🔍 대화 분석 및 검색 조건 설정</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns([2, 2])
+        with c1:
+            en_items = load_jsonl(DATA / "aci_test1.jsonl")
+            ko_items = load_jsonl(DATA / "aci_test1_ko.jsonl")
+            if not en_items or not ko_items:
+                st.error("aci_test1 / aci_test1_ko 없음 — preprocess.py + translate.py 실행 필요")
+                st.stop()
+            en_ids = [x.get("meta", {}).get("encounter_id", f"#{i}") for i, x in enumerate(en_items)]
+            ko_ids = [x.get("meta", {}).get("encounter_id", f"#{i}") for i, x in enumerate(ko_items)]
+            common_ids = sorted(set(en_ids) & set(ko_ids))
+            sel = st.selectbox("케이스 ID", common_ids, key="case_t1")
+        with c2:
+            retriever = st.selectbox(
+                "Retriever",
+                ["Random", "Dynamic TF-IDF", "Embedding"],
+                key="retriever_t1",
+            )
 
     rmap = {
         ("EN", "Random"):         "icl_gpt-4o-mini_2shot_test1.jsonl",
@@ -206,16 +303,40 @@ with tab1:
         with col:
             flag = "🇺🇸" if lang == "EN" else "🇰🇷"
             st.markdown(f"### {flag} {lang}")
-            st.markdown("**Dialogue (입력)**")
-            st.text_area(" ", case["messages"][1]["content"], height=250,
-                         label_visibility="collapsed", key=f"dlg_{lang}")
-            st.markdown("**Reference (정답)**")
-            st.text_area(" ", case["messages"][2]["content"], height=200,
-                         label_visibility="collapsed", key=f"ref_{lang}")
-            st.markdown("**Generated (모델 출력)**")
+            
+            # 1. Dialogue
+            dlg_content = html.escape(case["messages"][1]["content"])
+            st.markdown(f"""
+            <div class="doc-viewer-card doc-viewer-dlg">
+                <div class="doc-viewer-header">
+                    <span class="doc-viewer-title">💬 Dialogue (대화 입력)</span>
+                </div>
+                <div class="doc-viewer-body" style="height: 250px;">{dlg_content}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 2. Reference
+            ref_content = html.escape(case["messages"][2]["content"])
+            st.markdown(f"""
+            <div class="doc-viewer-card doc-viewer-ref">
+                <div class="doc-viewer-header">
+                    <span class="doc-viewer-title">🎯 Reference (임상 정답)</span>
+                </div>
+                <div class="doc-viewer-body" style="height: 200px;">{ref_content}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 3. Generated
             if pred and pred.get("prediction"):
-                st.text_area(" ", pred["prediction"], height=200,
-                             label_visibility="collapsed", key=f"pred_{lang}")
+                pred_content = html.escape(pred["prediction"])
+                st.markdown(f"""
+                <div class="doc-viewer-card doc-viewer-pred">
+                    <div class="doc-viewer-header">
+                        <span class="doc-viewer-title">🤖 Generated (모델 출력)</span>
+                    </div>
+                    <div class="doc-viewer-body" style="height: 200px;">{pred_content}</div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
                 st.info("이 케이스의 사전 생성 결과 없음.")
 
