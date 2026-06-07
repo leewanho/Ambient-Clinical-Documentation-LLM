@@ -234,6 +234,44 @@ st.markdown(
         align-items: center;
         gap: 0.5rem;
     }
+
+    /* Custom Dashboard Tables */
+    .custom-dashboard-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        margin: 1rem 0;
+        font-family: inherit;
+        background-color: #ffffff;
+    }
+    
+    .custom-dashboard-table th {
+        background-color: #f8fafc;
+        color: #1e293b;
+        font-weight: 700;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.95rem;
+        text-align: left;
+    }
+    
+    .custom-dashboard-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.95rem;
+        color: #334155;
+    }
+    
+    .custom-dashboard-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .custom-dashboard-table tr:hover td {
+        background-color: #f8fafc;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -366,81 +404,254 @@ with tab1:
 # =========================================================
 with tab2:
     st.header("결과 대시보드")
-    st.markdown("ACI-Bench test1 (n=40) · gpt-4o-mini ICL · 2-shot")
+    st.markdown('<p class="tab-subtitle">실험 종합 통계, ROUGE의 한계, 리트리버 성능 비교, 판사 간 Self-bias 정량 검증.</p>', unsafe_allow_html=True)
 
-    st.subheader("1. Retriever × Language 종합")
-    df = compute_metrics_table()
-    st.dataframe(df, width="stretch", hide_index=True)
+    # Helper function to style Plotly figures beautifully (Indigo & Slate theme)
+    def style_plotly_fig(fig):
+        fig.update_layout(
+            font_family="Outfit, Noto Sans KR, sans-serif",
+            title_font=dict(size=16, color="#0f172a", family="Outfit, Noto Sans KR"),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=40, r=20, t=50, b=40),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        fig.update_xaxes(
+            showgrid=True,
+            gridcolor="#f1f5f9",
+            linecolor="#cbd5e1",
+            tickfont=dict(size=12, color="#475569")
+        )
+        fig.update_yaxes(
+            showgrid=True,
+            gridcolor="#f1f5f9",
+            linecolor="#cbd5e1",
+            tickfont=dict(size=12, color="#475569")
+        )
+        return fig
 
-    st.subheader("2. ROUGE는 사실성을 못 잡는다 (발견 #2)")
-    st.markdown("Pearson(ROUGE-1, Factuality) ≈ 0.25 — 표면 메트릭과 사실성은 약한 상관")
-    scorer = get_rouge_scorer()
-    icl_en = load_jsonl(OUT / "icl_gpt-4o-mini_2shot_test1.jsonl")
-    j_en = safe_judge(OUT / JUDGE_FILES[("EN", "gpt-4o")])
-    pts = []
-    for x in icl_en:
-        if not x.get("prediction"):
-            continue
-        eid = x["meta"].get("encounter_id")
-        if eid not in j_en:
-            continue
-        sc = scorer.score(x["reference"], x["prediction"])
-        pts.append({
-            "encounter_id": eid,
-            "ROUGE-1": sc["rouge1"].fmeasure,
-            "Factuality": j_en[eid]["factuality"],
-        })
-    if pts:
-        dfp = pd.DataFrame(pts)
-        r = pearson(dfp["ROUGE-1"].tolist(), dfp["Factuality"].tolist())
-        fig = px.scatter(dfp, x="ROUGE-1", y="Factuality",
-                         hover_data=["encounter_id"],
-                         title=f"Pearson r = {r:.3f}")
-        fig.update_traces(marker=dict(size=10, opacity=0.7))
-        st.plotly_chart(fig, width="stretch")
+    # Helper to convert main metrics dataframe to premium HTML
+    def df_to_html_table(df):
+        html_str = """
+        <div style="overflow-x:auto;">
+            <table class="custom-dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Language</th>
+                        <th>Retriever</th>
+                        <th style="text-align: center;">N</th>
+                        <th style="text-align: center;">ROUGE-1</th>
+                        <th style="text-align: center;">ROUGE-L</th>
+                        <th style="text-align: center;">Factuality</th>
+                        <th style="text-align: center;">Completeness</th>
+                        <th style="text-align: center;">Format</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+        for _, row in df.iterrows():
+            lang = row['Language']
+            flag = "🇺🇸 EN" if lang == "EN" else "🇰🇷 KO"
+            retriever = row['Retriever']
+            n = row['N']
+            r1 = f"{row['ROUGE-1']:.4f}" if pd.notna(row['ROUGE-1']) else "-"
+            rl = f"{row['ROUGE-L']:.4f}" if pd.notna(row['ROUGE-L']) else "-"
+            fact = f"{row['Factuality']:.2f}" if pd.notna(row['Factuality']) else "-"
+            comp = f"{row['Completeness']:.2f}" if pd.notna(row['Completeness']) else "-"
+            fmt = f"{row['Format']:.2f}" if pd.notna(row['Format']) else "-"
+            
+            # Highlight best-in-class row
+            is_highlight = False
+            if lang == "EN" and retriever == "TF-IDF":
+                is_highlight = True
+            elif lang == "KO" and retriever == "Random":
+                is_highlight = True
+                
+            row_style = "background-color: #faf5ff; font-weight: 600;" if is_highlight else ""
+            
+            html_str += f"""
+                    <tr style="{row_style}">
+                        <td><strong>{flag}</strong></td>
+                        <td><code>{retriever}</code></td>
+                        <td style="text-align: center;">{n}</td>
+                        <td style="text-align: center;">{r1}</td>
+                        <td style="text-align: center;">{rl}</td>
+                        <td style="text-align: center; color: #166534; font-weight: 700;">{fact}</td>
+                        <td style="text-align: center;">{comp}</td>
+                        <td style="text-align: center;">{fmt}</td>
+                    </tr>
+            """
+        html_str += """
+                </tbody>
+            </table>
+        </div>
+        """
+        return html_str
 
-    st.subheader("3. Retriever 비교 — KO에서 Random이 최강 (발견 #4-6)")
-    sub_df = df.dropna(subset=["Factuality"])
-    fig = px.bar(sub_df, x="Retriever", y="Factuality", color="Language",
-                 barmode="group", text="Factuality",
-                 title="Factuality by Retriever × Language")
-    fig.update_traces(textposition="outside")
-    fig.update_yaxes(range=[0, 5])
-    st.plotly_chart(fig, width="stretch")
-    fig2 = px.bar(sub_df, x="Retriever", y="ROUGE-1", color="Language",
-                  barmode="group", text="ROUGE-1",
-                  title="ROUGE-1 by Retriever × Language")
-    fig2.update_traces(textposition="outside")
-    st.plotly_chart(fig2, width="stretch")
+    # Helper to convert judge metrics dataframe to HTML
+    def judge_df_to_html_table(df):
+        html_str = """
+        <table class="custom-dashboard-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th style="text-align: center;">gpt-4o</th>
+                    <th style="text-align: center;">Claude</th>
+                    <th style="text-align: center;">Gemini</th>
+                </tr>
+            </thead>
+            <tbody>
+        """
+        for _, row in df.iterrows():
+            metric = row['Metric'].capitalize()
+            g = f"{row['gpt-4o']:.2f}" if pd.notna(row['gpt-4o']) else "-"
+            c = f"{row['Claude']:.2f}" if pd.notna(row['Claude']) else "-"
+            m = f"{row['Gemini']:.2f}" if pd.notna(row['Gemini']) else "-"
+            
+            # Highlight self-bias vendor (gpt-4o) column
+            html_str += f"""
+                <tr>
+                    <td><strong>{metric}</strong></td>
+                    <td style="text-align: center; font-weight: 700; color: #4f46e5; background-color: #f5f3ff;">{g}</td>
+                    <td style="text-align: center;">{c}</td>
+                    <td style="text-align: center;">{m}</td>
+                </tr>
+            """
+        html_str += """
+            </tbody>
+        </table>
+        """
+        return html_str
 
-    st.subheader("4. 3-Vendor Judge — self-bias 정량 (발견 #7-9)")
-    cc1, cc2 = st.columns(2)
-    with cc1:
-        st.markdown("**EN baseline test1**")
-        en_jdf, n_en = judge_comparison_table("EN")
-        st.dataframe(en_jdf, hide_index=True, width="stretch")
-        st.caption(f"n={n_en}")
-    with cc2:
-        st.markdown("**KO baseline test1_ko**")
-        ko_jdf, n_ko = judge_comparison_table("KO")
-        st.dataframe(ko_jdf, hide_index=True, width="stretch")
-        st.caption(f"n={n_ko}")
+    # --- Section 1: Retriever × Language 종합 ---
+    with st.container(border=True):
+        st.markdown("### 📊 1. Retriever × Language 종합 성능")
+        st.markdown('<p class="tab-subtitle" style="margin-top:-0.5rem !important; margin-bottom: 0.5rem !important;">각 언어 및 검색 조건에 따른 ROUGE 어휘 유사도와 LLM-judge 평가 점수의 전체 종합 결과입니다.</p>', unsafe_allow_html=True)
+        df = compute_metrics_table()
+        st.markdown(df_to_html_table(df), unsafe_allow_html=True)
 
-    melt = pd.melt(
-        pd.concat([en_jdf.assign(Lang="EN"), ko_jdf.assign(Lang="KO")]),
-        id_vars=["Metric", "Lang"],
-        value_vars=["gpt-4o", "Claude", "Gemini"],
-        var_name="Judge", value_name="Score",
-    )
-    fig3 = px.bar(melt, x="Metric", y="Score", color="Judge", barmode="group",
-                  facet_col="Lang", text="Score",
-                  title="3-Vendor Judge 비교 — Format은 합의 없음 (발견 #8)")
-    fig3.update_traces(textposition="outside")
-    fig3.update_yaxes(range=[0, 5])
-    st.plotly_chart(fig3, width="stretch")
+    st.write("") # Spacer
 
-    st.subheader("5. 9개 발견 요약")
-    st.markdown("""
+    # --- Section 2: ROUGE vs Factuality ---
+    with st.container(border=True):
+        st.markdown("### 🎯 2. ROUGE는 사실성(Factuality)을 못 잡는다 (발견 #2)")
+        st.markdown('<p class="tab-subtitle" style="margin-top:-0.5rem !important; margin-bottom: 1rem !important;">전통적인 n-gram 중첩 메트릭(ROUGE)과 최신 LLM Judge가 매긴 Factuality 간의 Pearson 상관계수를 시각화합니다. (상관이 매우 낮아 ROUGE 지표 맹신은 위험함)</p>', unsafe_allow_html=True)
+        scorer = get_rouge_scorer()
+        icl_en = load_jsonl(OUT / "icl_gpt-4o-mini_2shot_test1.jsonl")
+        j_en = safe_judge(OUT / JUDGE_FILES[("EN", "gpt-4o")])
+        pts = []
+        for x in icl_en:
+            if not x.get("prediction"):
+                continue
+            eid = x["meta"].get("encounter_id")
+            if eid not in j_en:
+                continue
+            sc = scorer.score(x["reference"], x["prediction"])
+            pts.append({
+                "encounter_id": eid,
+                "ROUGE-1": sc["rouge1"].fmeasure,
+                "Factuality": j_en[eid]["factuality"],
+            })
+        if pts:
+            dfp = pd.DataFrame(pts)
+            r = pearson(dfp["ROUGE-1"].tolist(), dfp["Factuality"].tolist())
+            fig = px.scatter(dfp, x="ROUGE-1", y="Factuality",
+                             hover_data=["encounter_id"],
+                             title=f"Pearson r = {r:.3f} (ROUGE와 사실성의 불일치)")
+            fig.update_traces(
+                marker=dict(size=12, opacity=0.8, color="#4f46e5", line=dict(width=1, color="white")),
+                hovertemplate="<b>Case ID:</b> %{customdata[0]}<br><b>ROUGE-1:</b> %{x:.4f}<br><b>Factuality:</b> %{y:.2f}"
+            )
+            style_plotly_fig(fig)
+            st.plotly_chart(fig, use_container_width=True)
+
+    st.write("") # Spacer
+
+    # --- Section 3: Retriever 비교 ---
+    with st.container(border=True):
+        st.markdown("### 📈 3. Retriever 비교 — KO에서 Random이 최강 (발견 #4-6)")
+        st.markdown('<p class="tab-subtitle" style="margin-top:-0.5rem !important; margin-bottom: 1rem !important;">리트리버 방식(Random vs TF-IDF vs Embedding)에 따른 성능을 사실성(Factuality)과 ROUGE 지표를 통해 크로스 비교합니다.</p>', unsafe_allow_html=True)
+        sub_df = df.dropna(subset=["Factuality"])
+        
+        c_chart1, c_chart2 = st.columns(2)
+        with c_chart1:
+            fig = px.bar(sub_df, x="Retriever", y="Factuality", color="Language",
+                         barmode="group", text="Factuality",
+                         color_discrete_map={"EN": "#0ea5e9", "KO": "#8b5cf6"},
+                         title="Factuality by Retriever × Language")
+            fig.update_traces(
+                textposition="outside", 
+                texttemplate="%{text:.2f}",
+                marker=dict(line=dict(width=0))
+            )
+            fig.update_yaxes(range=[0, 5])
+            style_plotly_fig(fig)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with c_chart2:
+            fig2 = px.bar(sub_df, x="Retriever", y="ROUGE-1", color="Language",
+                          barmode="group", text="ROUGE-1",
+                          color_discrete_map={"EN": "#0ea5e9", "KO": "#8b5cf6"},
+                          title="ROUGE-1 by Retriever × Language")
+            fig2.update_traces(
+                textposition="outside", 
+                texttemplate="%{text:.4f}",
+                marker=dict(line=dict(width=0))
+            )
+            style_plotly_fig(fig2)
+            st.plotly_chart(fig2, use_container_width=True)
+
+    st.write("") # Spacer
+
+    # --- Section 4: 3-Vendor Judge ---
+    with st.container(border=True):
+        st.markdown("### ⚖️ 4. 3-Vendor Judge 및 자가 편향(Self-bias) 검증 (발견 #7-9)")
+        st.markdown('<p class="tab-subtitle" style="margin-top:-0.5rem !important; margin-bottom: 1rem !important;">동일한 요약 결과에 대해 3개의 대형 LLM 판사 모델(GPT-4o, Claude, Gemini)이 매긴 점수 비교입니다. (자가 모델 출력인 GPT-4o-mini에 더 호의적인 Self-bias 0.7~0.8점 격차가 나타남)</p>', unsafe_allow_html=True)
+        
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            st.markdown("<p style='font-weight:700; color:#1e293b; margin-bottom: 0.2rem;'>🇺🇸 EN baseline (test1)</p>", unsafe_allow_html=True)
+            en_jdf, n_en = judge_comparison_table("EN")
+            st.markdown(judge_df_to_html_table(en_jdf), unsafe_allow_html=True)
+        with cc2:
+            st.markdown("<p style='font-weight:700; color:#1e293b; margin-bottom: 0.2rem;'>🇰🇷 KO baseline (test1_ko)</p>", unsafe_allow_html=True)
+            ko_jdf, n_ko = judge_comparison_table("KO")
+            st.markdown(judge_df_to_html_table(ko_jdf), unsafe_allow_html=True)
+            
+        st.write("") # Inner spacing
+        
+        melt = pd.melt(
+            pd.concat([en_jdf.assign(Lang="EN"), ko_jdf.assign(Lang="KO")]),
+            id_vars=["Metric", "Lang"],
+            value_vars=["gpt-4o", "Claude", "Gemini"],
+            var_name="Judge", value_name="Score",
+        )
+        fig3 = px.bar(melt, x="Metric", y="Score", color="Judge", barmode="group",
+                      facet_col="Lang", text="Score",
+                      color_discrete_map={"gpt-4o": "#4f46e5", "Claude": "#ec4899", "Gemini": "#f59e0b"},
+                      title="3-Vendor Judge 비교 — Format은 합의 없음")
+        fig3.update_traces(
+            textposition="outside", 
+            texttemplate="%{text:.2f}",
+            marker=dict(line=dict(width=0))
+        )
+        fig3.update_yaxes(range=[0, 5])
+        style_plotly_fig(fig3)
+        st.plotly_chart(fig3, use_container_width=True)
+
+    st.write("") # Spacer
+
+    # --- Section 5: 9개 발견 요약 ---
+    with st.container(border=True):
+        st.markdown("### 📌 5. 9개 발견 요약")
+        st.markdown('<p class="tab-subtitle" style="margin-top:-0.5rem !important; margin-bottom: 0.5rem !important;">본 프로젝트에서 정량적으로 검증하고 규명한 9가지 가설 검증 결과의 최종 테이블 요약입니다.</p>', unsafe_allow_html=True)
+        st.markdown("""
 | # | 발견 | 유형 | 가설 결과 |
 |---|---|---|---|
 | 1 | gpt-4o-mini가 GPT-4(2023) ROUGE 동급 ($0.05/40건) | 사전 가설 | ✅ 가설 적중 |
