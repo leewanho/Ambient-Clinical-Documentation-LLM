@@ -1219,6 +1219,10 @@ with tab2:
         )
         return fig
 
+    # Helper to clean leading whitespace for markdown rendering safety
+    def clean_html(html_str):
+        return "\n".join(line.strip() for line in html_str.split("\n"))
+
     # Helper to convert main metrics dataframe to premium HTML
     def df_to_html_table(df):
         html_str = """
@@ -1275,7 +1279,7 @@ with tab2:
             </table>
         </div>
         """
-        return html_str
+        return clean_html(html_str)
 
     # Helper to convert judge metrics dataframe to HTML
     def judge_df_to_html_table(df):
@@ -1310,7 +1314,7 @@ with tab2:
             </tbody>
         </table>
         """
-        return html_str
+        return clean_html(html_str)
 
     # --- Section 1: Retriever × Language 종합 ---
     with st.container(border=True):
